@@ -1,0 +1,12 @@
+[package]
+name = "llama"
+version = "0.1.0"
+authors = ["Zach Shipko <zachshipko@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+thiserror = "1"
+llvm-sys = {version = "80", features=[]}
+
+[build-dependencies]
+cmake = "0.1"

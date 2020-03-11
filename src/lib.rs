@@ -25,6 +25,7 @@ extern "C" {
 }
 
 mod basic_block;
+mod builder;
 mod context;
 mod error;
 mod module;
@@ -39,6 +40,7 @@ pub(crate) use std::ptr::NonNull;
 pub(crate) use llvm_sys as llvm;
 
 pub use crate::basic_block::BasicBlock;
+pub use crate::builder::Builder;
 pub use crate::context::Context;
 pub use crate::error::Error;
 pub use crate::module::Module;

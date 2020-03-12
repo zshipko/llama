@@ -2,8 +2,6 @@ use crate::*;
 
 pub struct Module<'a>(NonNull<llvm::LLVMModule>, PhantomData<&'a ()>);
 
-pub struct Attribute<'a>(NonNull<llvm::LLVMOpaqueAttributeRef>, PhantomData<&'a ()>);
-
 impl<'a> LLVMInner<llvm::LLVMModule> for Module<'a> {
     fn llvm_inner(&self) -> *mut llvm::LLVMModule {
         self.0.as_ptr()
@@ -117,24 +115,6 @@ impl<'a> Module<'a> {
         }
 
         Ok(())
-    }
-
-    /// Create a string attribute
-    pub fn create_string_attribute<'b>(&self, k: &str, v: &str) -> Attribute<'b> {
-        unsafe {
-            Attribute(&mut *LLVMCreateStringAttribute(
-                self.context_ref(),
-                k.as_ptr() as *const i8,
-                k.len() as u32,
-                v.as_ptr() as *const i8,
-                v.len() as u32,
-            ))
-        }
-    }
-
-    /// Create an enum attribute
-    pub fn create_enum_attribute<'b>(&self, k: u32, v: u64) -> Attribute<'b> {
-        unsafe { Attribute(&mut *LLVMCreateEnumAttribute(self.context_ref(), k, v)) }
     }
 
     /// Create a new module from existing IR

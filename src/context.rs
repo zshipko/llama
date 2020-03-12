@@ -57,6 +57,24 @@ impl Context {
         unsafe { llvm::core::LLVMContextShouldDiscardValueNames(self.llvm_inner()) == 1 }
     }
 
+    /// Create a string attribute
+    pub fn create_string_attribute<'a>(&'a self, k: &str, v: &str) -> Result<Attribute<'a>, Error> {
+        unsafe {
+            Attribute::from_raw(llvm::core::LLVMCreateStringAttribute(
+                self.llvm_inner(),
+                k.as_ptr() as *const i8,
+                k.len() as u32,
+                v.as_ptr() as *const i8,
+                v.len() as u32,
+            ))
+        }
+    }
+
+    /// Create an enum attribute
+    pub fn create_enum_attribute<'a>(&'a self, k: u32, v: u64) -> Result<Attribute<'a>, Error> {
+        unsafe { Attribute::from_raw(llvm::core::LLVMCreateEnumAttribute(self.llvm_inner(), k, v)) }
+    }
+
     // TODO: LLVMContextGetDiagnosticHandler, LLVMContextSetDiagnosticHandler,
     // LLVMContextSetYieldCallback, ...
 }

@@ -75,6 +75,10 @@ impl Message {
 
 impl AsRef<str> for Message {
     fn as_ref(&self) -> &str {
+        if self.0.is_null() {
+            return "<NULL>";
+        }
+
         unsafe {
             let st = std::slice::from_raw_parts(self.0 as *const u8, self.len());
             std::str::from_utf8_unchecked(st)

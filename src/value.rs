@@ -19,4 +19,22 @@ impl<'a> Value<'a> {
     pub fn kind(&self) -> ValueKind {
         unsafe { llvm::core::LLVMGetValueKind(self.llvm_inner()) }
     }
+
+    pub fn const_int(&self, t: &Type, i: i64, sign_extend: bool) -> Result<Value<'a>, Error> {
+        unsafe {
+            Value::from_inner(llvm::core::LLVMConstInt(
+                t.llvm_inner(),
+                i as u64,
+                sign_extend as i32,
+            ))
+        }
+    }
+}
+
+impl<'a> std::fmt::Display for Value<'a> {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let message =
+            unsafe { Message::from_raw(llvm::core::LLVMPrintValueToString(self.llvm_inner())) };
+        write!(fmt, "{}", message.as_ref())
+    }
 }

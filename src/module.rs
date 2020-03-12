@@ -35,4 +35,40 @@ impl<'a> Module<'a> {
             Ok(s)
         }
     }
+
+    pub fn set_target(&self, target: impl AsRef<str>) {
+        let target = cstr!(target.as_ref());
+        unsafe { llvm::core::LLVMSetTarget(self.llvm_inner(), target.as_ptr()) }
+    }
+
+    pub fn get_target(&self) -> Result<&str, Error> {
+        unsafe {
+            let s = llvm::core::LLVMGetTarget(self.llvm_inner());
+            let s = std::slice::from_raw_parts(s as *const u8, strlen(s));
+            let s = std::str::from_utf8_unchecked(s);
+            Ok(s)
+        }
+    }
+
+    pub fn set_data_layout(&self, layout: impl AsRef<str>) {
+        let layout = cstr!(layout.as_ref());
+        unsafe { llvm::core::LLVMSetDataLayout(self.llvm_inner(), layout.as_ptr()) }
+    }
+
+    pub fn get_data_layout(&self) -> Result<&str, Error> {
+        unsafe {
+            let s = llvm::core::LLVMGetDataLayoutStr(self.llvm_inner());
+            let s = std::slice::from_raw_parts(s as *const u8, strlen(s));
+            let s = std::str::from_utf8_unchecked(s);
+            Ok(s)
+        }
+    }
+}
+
+impl<'a> std::fmt::Display for Module<'a> {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let message =
+            unsafe { Message::from_raw(llvm::core::LLVMPrintModuleToString(self.llvm_inner())) };
+        write!(fmt, "{}", message.as_ref())
+    }
 }

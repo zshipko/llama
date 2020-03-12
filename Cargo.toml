@@ -10,3 +10,8 @@ llvm-sys = {version = "80", features=[]}
 
 [build-dependencies]
 cmake = "0.1"
+
+[workspace]
+members = [
+  "build"
+]

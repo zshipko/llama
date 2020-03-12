@@ -1,3 +1,0 @@
-[submodule "wavm"]
-	path = wavm
-	url = https://github.com/wavm/wavm

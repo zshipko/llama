@@ -1,9 +1,4 @@
 #[allow(non_snake_case)]
-#[allow(non_upper_case_globals)]
-#[allow(non_camel_case_types)]
-#[allow(unused)]
-mod wavm_bindings;
-
 macro_rules! cstr {
     ($x:expr) => {
         std::ffi::CString::new($x).expect("Invalid C string")
@@ -24,11 +19,14 @@ extern "C" {
     fn strlen(_: *const std::os::raw::c_char) -> usize;
 }
 
+mod attribute;
 mod basic_block;
 mod builder;
 mod context;
 mod error;
+mod execution_engine;
 mod module;
+mod pass_manager;
 mod typ;
 mod value;
 
@@ -39,15 +37,29 @@ pub(crate) use std::ptr::NonNull;
 
 pub(crate) use llvm_sys as llvm;
 
+pub use crate::attribute::Attribute;
 pub use crate::basic_block::BasicBlock;
 pub use crate::builder::Builder;
 pub use crate::context::Context;
 pub use crate::error::Error;
+pub use crate::execution_engine::ExecutionEngine;
 pub use crate::module::Module;
+pub use crate::pass_manager::PassManager;
 pub use crate::typ::{Type, TypeKind};
 pub use crate::value::{Value, ValueKind};
 
+pub use llvm::{
+    LLVMAtomicOrdering as AtomicOrdering, LLVMCallConv as CallConv,
+    LLVMDiagnosticSeverity as DiagnosticSeverity, LLVMInlineAsmDialect as InlineAsmDialect,
+    LLVMIntPredicate as IntPredicate, LLVMLinkage as Linkage,
+    LLVMModuleFlagBehavior as ModuleFlagBehavior, LLVMOpcode as OpCode,
+    LLVMRealPredicate as RealPredicate, LLVMThreadLocalMode as ThreadLocalMode,
+    LLVMUnnamedAddr as UnnamedAddr, LLVMVisibility as Visibility,
+};
+
+/// Allows for llama types to be converted into LLVM pointers
 pub trait LLVMInner<T> {
+    /// Return a LLVM pointer
     fn llvm_inner(&self) -> *mut T;
 }
 
@@ -58,12 +70,14 @@ pub(crate) fn wrap_inner<T>(x: *mut T) -> Result<NonNull<T>, Error> {
     }
 }
 
+/// Wraps LLVM messages, these are strings that should be freed using LLVMDisposeMessage
 pub struct Message(*mut c_char);
 impl Message {
     pub(crate) fn from_raw(c: *mut c_char) -> Message {
         Message(c)
     }
 
+    /// Message length
     pub fn len(&self) -> usize {
         if self.0.is_null() {
             return 0;
@@ -83,6 +97,12 @@ impl AsRef<str> for Message {
             let st = std::slice::from_raw_parts(self.0 as *const u8, self.len());
             std::str::from_utf8_unchecked(st)
         }
+    }
+}
+
+impl From<Message> for String {
+    fn from(m: Message) -> String {
+        m.as_ref().into()
     }
 }
 
@@ -106,6 +126,7 @@ impl std::fmt::Debug for Message {
     }
 }
 
+/// Memory buffer wraps LLVMMemoryBufferRef
 pub struct MemoryBuffer(NonNull<llvm::LLVMMemoryBuffer>);
 
 llvm_inner_impl!(MemoryBuffer, llvm::LLVMMemoryBuffer);
@@ -115,6 +136,7 @@ impl MemoryBuffer {
         Ok(MemoryBuffer(wrap_inner(ptr)?))
     }
 
+    /// Create new memory buffer from file
     pub fn from_file(path: impl AsRef<std::path::Path>) -> Result<MemoryBuffer, Error> {
         let path = match path.as_ref().to_str() {
             Some(p) => cstr!(p),
@@ -140,6 +162,7 @@ impl MemoryBuffer {
         Self::from_raw(mem)
     }
 
+    /// Create new memory buffer from slice
     pub fn from_slice(name: impl AsRef<str>, s: impl AsRef<[u8]>) -> Result<MemoryBuffer, Error> {
         let name = cstr!(name.as_ref());
         let s = s.as_ref();
@@ -154,10 +177,12 @@ impl MemoryBuffer {
         Self::from_raw(mem)
     }
 
+    /// Number of bytes in buffer
     pub fn size(&self) -> usize {
         unsafe { llvm::core::LLVMGetBufferSize(self.0.as_ptr()) }
     }
 
+    /// Get the underlying data
     pub fn as_slice(&self) -> &[u8] {
         let size = self.size();
         unsafe {

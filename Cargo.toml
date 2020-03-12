@@ -13,5 +13,6 @@ cmake = "0.1"
 
 [workspace]
 members = [
-  "build"
+  "build",
+  "wasm"
 ]

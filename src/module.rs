@@ -26,6 +26,28 @@ impl<'a> Module<'a> {
         Ok(Module(m, PhantomData))
     }
 
+    pub fn parse_bitcode(ctx: &Context, mem_buf: &MemoryBuffer) -> Option<Module<'a>> {
+        let mut module = std::ptr::null_mut();
+        let ok = unsafe {
+            llvm::bit_reader::LLVMParseBitcodeInContext2(
+                ctx.llvm_inner(),
+                mem_buf.llvm_inner(),
+                &mut module,
+            ) == 1
+        };
+
+        if !ok {
+            return None;
+        }
+
+        let module = match wrap_inner(module) {
+            Ok(m) => m,
+            Err(_) => return None,
+        };
+
+        Some(Module(module, PhantomData))
+    }
+
     pub fn identifier(&self) -> Result<&str, Error> {
         let mut size = 0usize;
         unsafe {
@@ -62,6 +84,24 @@ impl<'a> Module<'a> {
             let s = std::str::from_utf8_unchecked(s);
             Ok(s)
         }
+    }
+
+    pub fn write_bitcode_to_file(&self, path: impl AsRef<std::path::Path>) -> Result<bool, Error> {
+        let path = match path.as_ref().to_str() {
+            Some(p) => cstr!(p),
+            None => return Err(Error::InvalidPath),
+        };
+
+        let r = unsafe {
+            llvm::bit_writer::LLVMWriteBitcodeToFile(self.llvm_inner(), path.as_ptr()) == 0
+        };
+
+        Ok(r)
+    }
+
+    pub fn write_bitcode_to_memory_buffer(&self) -> Result<MemoryBuffer, Error> {
+        let mem = unsafe { llvm::bit_writer::LLVMWriteBitcodeToMemoryBuffer(self.llvm_inner()) };
+        MemoryBuffer::from_raw(mem)
     }
 }
 

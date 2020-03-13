@@ -6,10 +6,52 @@ llvm_inner_impl!(Type<'a>, llvm::LLVMType);
 
 pub type TypeKind = llvm::LLVMTypeKind;
 
+pub struct FunctionType<'a>(pub(crate) Type<'a>);
+
+impl<'a> AsRef<Type<'a>> for FunctionType<'a> {
+    fn as_ref(&self) -> &Type<'a> {
+        &self.0
+    }
+}
+
+impl<'a> From<FunctionType<'a>> for Type<'a> {
+    fn from(x: FunctionType<'a>) -> Type<'a> {
+        x.0
+    }
+}
+
+pub struct StructType<'a>(pub(crate) Type<'a>);
+
+impl<'a> AsRef<Type<'a>> for StructType<'a> {
+    fn as_ref(&self) -> &Type<'a> {
+        &self.0
+    }
+}
+
+impl<'a> From<StructType<'a>> for Type<'a> {
+    fn from(x: StructType<'a>) -> Type<'a> {
+        x.0
+    }
+}
+
 impl<'a> Type<'a> {
     pub(crate) fn from_inner(ptr: *mut llvm::LLVMType) -> Result<Type<'a>, Error> {
         let t = wrap_inner(ptr)?;
         Ok(Type(t, PhantomData))
+    }
+
+    pub fn by_name(module: &Module, name: impl AsRef<str>) -> Result<Type<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        unsafe {
+            Self::from_inner(llvm::core::LLVMGetTypeByName(
+                module.llvm_inner(),
+                name.as_ptr(),
+            ))
+        }
+    }
+
+    pub fn int_width(&self) -> usize {
+        unsafe { llvm::core::LLVMGetIntTypeWidth(self.llvm_inner()) as usize }
     }
 
     pub fn int(ctx: &'a Context, bits: usize) -> Result<Type<'a>, Error> {
@@ -21,8 +63,32 @@ impl<'a> Type<'a> {
         }
     }
 
+    pub fn is(&self, kind: TypeKind) -> bool {
+        self.kind() == kind
+    }
+
     pub fn void(ctx: &'a Context) -> Result<Type<'a>, Error> {
         unsafe { Self::from_inner(llvm::core::LLVMVoidTypeInContext(ctx.llvm_inner())) }
+    }
+
+    pub fn label(ctx: &'a Context) -> Result<Type<'a>, Error> {
+        unsafe { Self::from_inner(llvm::core::LLVMLabelTypeInContext(ctx.llvm_inner())) }
+    }
+
+    pub fn token(ctx: &'a Context) -> Result<Type<'a>, Error> {
+        unsafe { Self::from_inner(llvm::core::LLVMTokenTypeInContext(ctx.llvm_inner())) }
+    }
+
+    pub fn metadata(ctx: &'a Context) -> Result<Type<'a>, Error> {
+        unsafe { Self::from_inner(llvm::core::LLVMMetadataTypeInContext(ctx.llvm_inner())) }
+    }
+
+    pub fn x86_mmx(ctx: &'a Context) -> Result<Type<'a>, Error> {
+        unsafe { Self::from_inner(llvm::core::LLVMX86MMXTypeInContext(ctx.llvm_inner())) }
+    }
+
+    pub fn half(ctx: &'a Context) -> Result<Type<'a>, Error> {
+        unsafe { Self::from_inner(llvm::core::LLVMHalfTypeInContext(ctx.llvm_inner())) }
     }
 
     pub fn float(ctx: &'a Context) -> Result<Type<'a>, Error> {
@@ -31,6 +97,31 @@ impl<'a> Type<'a> {
 
     pub fn double(ctx: &'a Context) -> Result<Type<'a>, Error> {
         unsafe { Self::from_inner(llvm::core::LLVMDoubleTypeInContext(ctx.llvm_inner())) }
+    }
+
+    pub fn fp128(ctx: &'a Context) -> Result<Type<'a>, Error> {
+        unsafe { Self::from_inner(llvm::core::LLVMFP128TypeInContext(ctx.llvm_inner())) }
+    }
+
+    pub fn element_type(&self) -> Result<Type<'a>, Error> {
+        let t = unsafe { llvm::core::LLVMGetElementType(self.llvm_inner()) };
+        Self::from_inner(t)
+    }
+
+    pub fn into_function_type(self) -> Result<FunctionType<'a>, Error> {
+        if !self.is(TypeKind::LLVMFunctionTypeKind) {
+            return Err(Error::InvalidType);
+        }
+
+        Ok(FunctionType(self))
+    }
+
+    pub fn into_struct_type(self) -> Result<StructType<'a>, Error> {
+        if !self.is(TypeKind::LLVMStructTypeKind) {
+            return Err(Error::InvalidType);
+        }
+
+        Ok(StructType(self))
     }
 
     pub fn pointer(&self, address_space: Option<usize>) -> Result<Type<'a>, Error> {
@@ -67,6 +158,169 @@ impl<'a> Type<'a> {
 
     pub fn is_sized(&self) -> bool {
         unsafe { llvm::core::LLVMTypeIsSized(self.llvm_inner()) == 1 }
+    }
+
+    pub fn array_len(&self) -> usize {
+        unsafe { llvm::core::LLVMGetArrayLength(self.llvm_inner()) as usize }
+    }
+
+    pub fn vector_len(&self) -> usize {
+        unsafe { llvm::core::LLVMGetArrayLength(self.llvm_inner()) as usize }
+    }
+
+    pub fn pointer_address_space(&self) -> usize {
+        unsafe { llvm::core::LLVMGetArrayLength(self.llvm_inner()) as usize }
+    }
+
+    pub fn align_of(&self) -> Result<Value<'a>, Error> {
+        unsafe { Value::from_inner(llvm::core::LLVMAlignOf(self.llvm_inner())) }
+    }
+
+    pub fn size_of(self) -> Result<Value<'a>, Error> {
+        unsafe { Value::from_inner(llvm::core::LLVMSizeOf(self.llvm_inner())) }
+    }
+}
+
+impl<'a> FunctionType<'a> {
+    pub fn new(
+        return_type: impl AsRef<Type<'a>>,
+        params: impl AsRef<[&'a Type<'a>]>,
+        var_arg: bool,
+    ) -> Result<Type<'a>, Error> {
+        let mut params: Vec<*mut llvm::LLVMType> = params
+            .as_ref()
+            .into_iter()
+            .map(|x| x.llvm_inner())
+            .collect();
+        let len = params.len();
+        let t = unsafe {
+            llvm::core::LLVMFunctionType(
+                return_type.as_ref().llvm_inner(),
+                params.as_mut_ptr(),
+                len as u32,
+                if var_arg { 1 } else { 0 },
+            )
+        };
+        Type::from_inner(t)
+    }
+
+    pub fn is_var_arg(&self) -> bool {
+        unsafe { llvm::core::LLVMIsFunctionVarArg(self.as_ref().llvm_inner()) == 1 }
+    }
+
+    pub fn return_type(&self) -> Result<Type<'a>, Error> {
+        let t = unsafe { llvm::core::LLVMGetReturnType(self.as_ref().llvm_inner()) };
+        Type::from_inner(t)
+    }
+
+    pub fn param_count(&self) -> usize {
+        let n = unsafe { llvm::core::LLVMCountParamTypes(self.as_ref().llvm_inner()) };
+        n as usize
+    }
+
+    pub fn params(&self) -> Vec<Type<'a>> {
+        let len = self.param_count();
+        let mut ptr = std::ptr::null_mut();
+
+        unsafe { llvm::core::LLVMGetParamTypes(self.as_ref().llvm_inner(), &mut ptr) }
+        let slice = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
+        slice
+            .into_iter()
+            .map(|x| Type::from_inner(x).unwrap())
+            .collect()
+    }
+}
+
+impl<'a> StructType<'a> {
+    pub fn new(
+        ctx: &'a Context,
+        fields: impl AsRef<[&'a Type<'a>]>,
+        packed: bool,
+    ) -> Result<Type<'a>, Error> {
+        let mut fields: Vec<*mut llvm::LLVMType> = fields
+            .as_ref()
+            .into_iter()
+            .map(|x| x.llvm_inner())
+            .collect();
+        let len = fields.len();
+        let t = unsafe {
+            llvm::core::LLVMStructTypeInContext(
+                ctx.llvm_inner(),
+                fields.as_mut_ptr(),
+                len as u32,
+                if packed { 1 } else { 0 },
+            )
+        };
+        Type::from_inner(t)
+    }
+
+    pub fn new_named(ctx: &'a Context, name: impl AsRef<str>) -> Result<Type<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        let t = unsafe { llvm::core::LLVMStructCreateNamed(ctx.llvm_inner(), name.as_ptr()) };
+        Type::from_inner(t)
+    }
+
+    pub fn name(&self) -> Result<&str, Error> {
+        unsafe {
+            let s = llvm::core::LLVMGetStructName(self.as_ref().llvm_inner());
+            let s = std::slice::from_raw_parts(s as *const u8, strlen(s));
+            let s = std::str::from_utf8(s)?;
+            Ok(s)
+        }
+    }
+
+    pub fn set_body(&mut self, fields: impl AsRef<[&'a Type<'a>]>, packed: bool) {
+        let mut fields: Vec<*mut llvm::LLVMType> = fields
+            .as_ref()
+            .into_iter()
+            .map(|x| x.llvm_inner())
+            .collect();
+        let len = fields.len();
+        unsafe {
+            llvm::core::LLVMStructSetBody(
+                self.as_ref().llvm_inner(),
+                fields.as_mut_ptr(),
+                len as u32,
+                if packed { 1 } else { 0 },
+            )
+        };
+    }
+
+    pub fn field_count(&self) -> usize {
+        let n = unsafe { llvm::core::LLVMCountStructElementTypes(self.as_ref().llvm_inner()) };
+        n as usize
+    }
+
+    pub fn fields(&self) -> Vec<Type<'a>> {
+        let len = self.field_count();
+        let mut ptr = std::ptr::null_mut();
+
+        unsafe { llvm::core::LLVMGetStructElementTypes(self.as_ref().llvm_inner(), &mut ptr) }
+        let slice = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
+        slice
+            .into_iter()
+            .map(|x| Type::from_inner(x).unwrap())
+            .collect()
+    }
+
+    pub fn field(&self, index: usize) -> Result<Type<'a>, Error> {
+        let t = unsafe {
+            llvm::core::LLVMStructGetTypeAtIndex(self.as_ref().llvm_inner(), index as c_uint)
+        };
+
+        Type::from_inner(t)
+    }
+
+    pub fn is_packed(&self) -> bool {
+        unsafe { llvm::core::LLVMIsPackedStruct(self.as_ref().llvm_inner()) == 1 }
+    }
+
+    pub fn is_opaque(&self) -> bool {
+        unsafe { llvm::core::LLVMIsOpaqueStruct(self.as_ref().llvm_inner()) == 1 }
+    }
+
+    pub fn is_literal(&self) -> bool {
+        unsafe { llvm::core::LLVMIsLiteralStruct(self.as_ref().llvm_inner()) == 1 }
     }
 }
 

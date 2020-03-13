@@ -21,6 +21,7 @@ extern "C" {
 
 mod attribute;
 mod basic_block;
+mod binary;
 mod builder;
 mod context;
 mod error;
@@ -39,20 +40,21 @@ pub(crate) use llvm_sys as llvm;
 
 pub use crate::attribute::Attribute;
 pub use crate::basic_block::BasicBlock;
+pub use crate::binary::Binary;
 pub use crate::builder::Builder;
 pub use crate::context::Context;
 pub use crate::error::Error;
 pub use crate::execution_engine::ExecutionEngine;
 pub use crate::module::Module;
 pub use crate::pass_manager::PassManager;
-pub use crate::typ::{Type, TypeKind};
-pub use crate::value::{Value, ValueKind};
+pub use crate::typ::{FunctionType, StructType, Type, TypeKind};
+pub use crate::value::{Const, Function, Value, ValueKind};
 
 pub use llvm::{
-    LLVMAtomicOrdering as AtomicOrdering, LLVMCallConv as CallConv,
-    LLVMDiagnosticSeverity as DiagnosticSeverity, LLVMInlineAsmDialect as InlineAsmDialect,
-    LLVMIntPredicate as IntPredicate, LLVMLinkage as Linkage,
-    LLVMModuleFlagBehavior as ModuleFlagBehavior, LLVMOpcode as OpCode,
+    object::LLVMBinaryType as BinaryType, LLVMAtomicOrdering as AtomicOrdering,
+    LLVMCallConv as CallConv, LLVMDiagnosticSeverity as DiagnosticSeverity,
+    LLVMInlineAsmDialect as InlineAsmDialect, LLVMIntPredicate as IntPredicate,
+    LLVMLinkage as Linkage, LLVMModuleFlagBehavior as ModuleFlagBehavior, LLVMOpcode as OpCode,
     LLVMRealPredicate as RealPredicate, LLVMThreadLocalMode as ThreadLocalMode,
     LLVMUnnamedAddr as UnnamedAddr, LLVMVisibility as Visibility,
 };
@@ -178,13 +180,21 @@ impl MemoryBuffer {
     }
 
     /// Number of bytes in buffer
-    pub fn size(&self) -> usize {
+    pub fn len(&self) -> usize {
         unsafe { llvm::core::LLVMGetBufferSize(self.0.as_ptr()) }
     }
 
-    /// Get the underlying data
-    pub fn as_slice(&self) -> &[u8] {
-        let size = self.size();
+    /// Write buffer to the specified file
+    pub fn write_to_file(&self, path: impl AsRef<std::path::Path>) -> Result<(), Error> {
+        let mut f = std::fs::File::create(path)?;
+        std::io::Write::write_all(&mut f, self.as_ref())?;
+        Ok(())
+    }
+}
+
+impl AsRef<[u8]> for MemoryBuffer {
+    fn as_ref(&self) -> &[u8] {
+        let size = self.len();
         unsafe {
             let data = llvm::core::LLVMGetBufferStart(self.0.as_ptr());
             std::slice::from_raw_parts(data as *const u8, size)

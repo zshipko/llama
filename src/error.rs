@@ -6,6 +6,12 @@ pub enum Error {
     Utf8Error(#[from] std::str::Utf8Error),
     #[error("Message: {0}")]
     Message(crate::Message),
+    #[error("I/O: {0}")]
+    IO(#[from] std::io::Error),
     #[error("Invalid path name")]
     InvalidPath,
+    #[error("Invalid type")]
+    InvalidType,
+    #[error("Invalid constant")]
+    InvalidConst,
 }

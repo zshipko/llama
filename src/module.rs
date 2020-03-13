@@ -2,11 +2,7 @@ use crate::*;
 
 pub struct Module<'a>(NonNull<llvm::LLVMModule>, PhantomData<&'a ()>);
 
-impl<'a> LLVMInner<llvm::LLVMModule> for Module<'a> {
-    fn llvm_inner(&self) -> *mut llvm::LLVMModule {
-        self.0.as_ptr()
-    }
-}
+llvm_inner_impl!(Module<'a>, llvm::LLVMModule);
 
 impl<'a> Drop for Module<'a> {
     fn drop(&mut self) {
@@ -97,6 +93,31 @@ impl<'a> Module<'a> {
         }
     }
 
+    /// Set module inline assembly
+    pub fn set_inline_asm(&mut self, asm: impl AsRef<str>) {
+        let len = asm.as_ref().len();
+        let asm = cstr!(asm.as_ref());
+        unsafe { llvm::core::LLVMSetModuleInlineAsm2(self.llvm_inner(), asm.as_ptr(), len) }
+    }
+
+    /// Append module inline assembly
+    pub fn append_inline_asm(&mut self, asm: impl AsRef<str>) {
+        let len = asm.as_ref().len();
+        let asm = cstr!(asm.as_ref());
+        unsafe { llvm::core::LLVMAppendModuleInlineAsm(self.llvm_inner(), asm.as_ptr(), len) }
+    }
+
+    /// Get module inline assembly
+    pub fn get_inline_asm(&self) -> Result<&str, Error> {
+        let mut len = 0;
+        unsafe {
+            let s = llvm::core::LLVMGetModuleInlineAsm(self.llvm_inner(), &mut len);
+            let s = std::slice::from_raw_parts(s as *const u8, len);
+            let s = std::str::from_utf8_unchecked(s);
+            Ok(s)
+        }
+    }
+
     /// Verify the module, returning an error on failure
     pub fn verify(&self) -> Result<(), Error> {
         let mut message = std::ptr::null_mut();
@@ -115,6 +136,30 @@ impl<'a> Module<'a> {
         }
 
         Ok(())
+    }
+
+    pub fn add_function(&mut self, name: impl AsRef<str>, t: &Type) -> Result<Function<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        let value = unsafe {
+            llvm::core::LLVMAddFunction(self.llvm_inner(), name.as_ptr(), t.llvm_inner())
+        };
+        Ok(Function(Value::from_inner(value)?))
+    }
+
+    pub fn get_named_function(&self, name: impl AsRef<str>) -> Result<Function<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        let value = unsafe { llvm::core::LLVMGetNamedFunction(self.llvm_inner(), name.as_ptr()) };
+        Ok(Function(Value::from_inner(value)?))
+    }
+
+    pub fn get_first_function(&self) -> Result<Function<'a>, Error> {
+        let value = unsafe { llvm::core::LLVMGetFirstFunction(self.llvm_inner()) };
+        Ok(Function(Value::from_inner(value)?))
+    }
+
+    pub fn get_last_function(&self) -> Result<Function<'a>, Error> {
+        let value = unsafe { llvm::core::LLVMGetLastFunction(self.llvm_inner()) };
+        Ok(Function(Value::from_inner(value)?))
     }
 
     /// Create a new module from existing IR

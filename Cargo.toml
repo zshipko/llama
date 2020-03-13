@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 thiserror = "1"
-llvm-sys = {version = "80", features=[]}
+llvm-sys = {version = "90", features=[]}
 
 [build-dependencies]
 cmake = "0.1"

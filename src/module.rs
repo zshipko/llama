@@ -32,6 +32,11 @@ impl<'a> Module<'a> {
         Ok(Module(m, PhantomData))
     }
 
+    pub fn context(&self) -> Result<Context, Error> {
+        let ctx = unsafe { wrap_inner(llvm::core::LLVMGetModuleContext(self.llvm_inner()))? };
+        Ok(Context(ctx, false, PhantomData))
+    }
+
     /// Get the module identifier
     pub fn identifier(&self) -> Result<&str, Error> {
         let mut size = 0usize;
@@ -51,7 +56,7 @@ impl<'a> Module<'a> {
     }
 
     /// Get the source file name
-    pub fn get_source_file(&self) -> Result<&str, Error> {
+    pub fn source_file(&self) -> Result<&str, Error> {
         let mut size = 0;
         unsafe {
             let s = llvm::core::LLVMGetSourceFileName(self.llvm_inner(), &mut size);
@@ -68,7 +73,7 @@ impl<'a> Module<'a> {
     }
 
     /// Get the target string
-    pub fn get_target(&self) -> Result<&str, Error> {
+    pub fn target(&self) -> Result<&str, Error> {
         unsafe {
             let s = llvm::core::LLVMGetTarget(self.llvm_inner());
             let s = std::slice::from_raw_parts(s as *const u8, strlen(s));
@@ -84,7 +89,7 @@ impl<'a> Module<'a> {
     }
 
     /// Get data layout string
-    pub fn get_data_layout(&self) -> Result<&str, Error> {
+    pub fn data_layout(&self) -> Result<&str, Error> {
         unsafe {
             let s = llvm::core::LLVMGetDataLayoutStr(self.llvm_inner());
             let s = std::slice::from_raw_parts(s as *const u8, strlen(s));
@@ -108,7 +113,7 @@ impl<'a> Module<'a> {
     }
 
     /// Get module inline assembly
-    pub fn get_inline_asm(&self) -> Result<&str, Error> {
+    pub fn inline_asm(&self) -> Result<&str, Error> {
         let mut len = 0;
         unsafe {
             let s = llvm::core::LLVMGetModuleInlineAsm(self.llvm_inner(), &mut len);
@@ -146,18 +151,25 @@ impl<'a> Module<'a> {
         Ok(Function(Value::from_inner(value)?))
     }
 
-    pub fn get_named_function(&self, name: impl AsRef<str>) -> Result<Function<'a>, Error> {
+    pub fn add_global(&mut self, name: impl AsRef<str>, t: &Type) -> Result<Function<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        let value =
+            unsafe { llvm::core::LLVMAddGlobal(self.llvm_inner(), t.llvm_inner(), name.as_ptr()) };
+        Ok(Function(Value::from_inner(value)?))
+    }
+
+    pub fn named_function(&self, name: impl AsRef<str>) -> Result<Function<'a>, Error> {
         let name = cstr!(name.as_ref());
         let value = unsafe { llvm::core::LLVMGetNamedFunction(self.llvm_inner(), name.as_ptr()) };
         Ok(Function(Value::from_inner(value)?))
     }
 
-    pub fn get_first_function(&self) -> Result<Function<'a>, Error> {
+    pub fn first_function(&self) -> Result<Function<'a>, Error> {
         let value = unsafe { llvm::core::LLVMGetFirstFunction(self.llvm_inner()) };
         Ok(Function(Value::from_inner(value)?))
     }
 
-    pub fn get_last_function(&self) -> Result<Function<'a>, Error> {
+    pub fn last_function(&self) -> Result<Function<'a>, Error> {
         let value = unsafe { llvm::core::LLVMGetLastFunction(self.llvm_inner()) };
         Ok(Function(Value::from_inner(value)?))
     }
@@ -227,6 +239,14 @@ impl<'a> Module<'a> {
     pub fn write_bitcode_to_memory_buffer(&self) -> Result<MemoryBuffer, Error> {
         let mem = unsafe { llvm::bit_writer::LLVMWriteBitcodeToMemoryBuffer(self.llvm_inner()) };
         MemoryBuffer::from_raw(mem)
+    }
+
+    /// Link another module into `self`
+    pub fn link(&mut self, other: &Module) -> bool {
+        unsafe {
+            let other = llvm::core::LLVMCloneModule(other.llvm_inner());
+            llvm::linker::LLVMLinkModules2(self.llvm_inner(), other) == 1
+        }
     }
 }
 

@@ -1,47 +1,35 @@
 use crate::*;
 
 /// Context wraps LLVMContext
-pub struct Context(NonNull<llvm::LLVMContext>);
+pub struct Context<'a>(
+    pub(crate) NonNull<llvm::LLVMContext>,
+    pub(crate) bool,
+    pub(crate) PhantomData<&'a ()>,
+);
 
-llvm_inner_impl!(Context, llvm::LLVMContext);
+llvm_inner_impl!(Context<'a>, llvm::LLVMContext);
 
-impl Drop for Context {
+impl<'a> Drop for Context<'a> {
     fn drop(&mut self) {
-        unsafe {
-            let global = llvm::core::LLVMGetGlobalContext();
-            if self.llvm_inner() != global {
-                llvm::core::LLVMContextDispose(self.llvm_inner())
-            }
+        if !self.1 {
+            return;
         }
+
+        unsafe { llvm::core::LLVMContextDispose(self.llvm_inner()) }
     }
 }
 
-/*pub struct DiagnosticInfo(NonNull<llvm::LLVMDiagnosticInfo>);
-
-llvm_inner_impl!(DiagnosticInfo, llvm::LLVMDiagnosticInfo);
-
-impl DiagnosticInfo {
-    pub fn severity(&self) -> DiagnosticSeverity {
-        unsafe { llvm::core::LLVMGetDiagInfoSeverity(self.llvm_inner()) }
-    }
-
-    pub fn description(&self) -> Message {
-        let message = unsafe { llvm::core::LLVMGetDiagInfoDescription(self.llvm_inner()) };
-        Message::from_raw(message)
-    }
-}*/
-
-impl Context {
+impl<'a> Context<'a> {
     /// Create a new context
-    pub fn new() -> Result<Context, Error> {
+    pub fn new() -> Result<Self, Error> {
         let ctx = unsafe { wrap_inner(llvm::core::LLVMContextCreate())? };
-        Ok(Context(ctx))
+        Ok(Context(ctx, true, PhantomData))
     }
 
     /// Return the global context
-    pub fn global() -> Result<Context, Error> {
+    pub fn global() -> Result<Self, Error> {
         let ctx = unsafe { wrap_inner(llvm::core::LLVMGetGlobalContext())? };
-        Ok(Context(ctx))
+        Ok(Context(ctx, false, PhantomData))
     }
 
     pub fn set_discard_value_names(&mut self, discard: bool) {
@@ -58,7 +46,7 @@ impl Context {
     }
 
     /// Create a string attribute
-    pub fn create_string_attribute<'a>(&'a self, k: &str, v: &str) -> Result<Attribute<'a>, Error> {
+    pub fn create_string_attribute(&'a self, k: &str, v: &str) -> Result<Attribute<'a>, Error> {
         unsafe {
             Attribute::from_raw(llvm::core::LLVMCreateStringAttribute(
                 self.llvm_inner(),
@@ -71,7 +59,7 @@ impl Context {
     }
 
     /// Create an enum attribute
-    pub fn create_enum_attribute<'a>(&'a self, k: u32, v: u64) -> Result<Attribute<'a>, Error> {
+    pub fn create_enum_attribute(&'a self, k: u32, v: u64) -> Result<Attribute<'a>, Error> {
         unsafe { Attribute::from_raw(llvm::core::LLVMCreateEnumAttribute(self.llvm_inner(), k, v)) }
     }
 

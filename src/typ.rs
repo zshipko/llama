@@ -8,6 +8,12 @@ pub type TypeKind = llvm::LLVMTypeKind;
 
 pub struct FunctionType<'a>(pub(crate) Type<'a>);
 
+impl<'a> AsRef<Type<'a>> for Type<'a> {
+    fn as_ref(&self) -> &Type<'a> {
+        &self
+    }
+}
+
 impl<'a> AsRef<Type<'a>> for FunctionType<'a> {
     fn as_ref(&self) -> &Type<'a> {
         &self.0
@@ -52,6 +58,16 @@ impl<'a> Type<'a> {
 
     pub fn int_width(&self) -> usize {
         unsafe { llvm::core::LLVMGetIntTypeWidth(self.llvm_inner()) as usize }
+    }
+
+    pub fn context(&self) -> Result<Context, Error> {
+        let ctx = unsafe { wrap_inner(llvm::core::LLVMGetTypeContext(self.llvm_inner()))? };
+        Ok(Context(ctx, false, PhantomData))
+    }
+
+    pub(crate) fn into_context(self) -> Result<Context<'a>, Error> {
+        let ctx = unsafe { wrap_inner(llvm::core::LLVMGetTypeContext(self.llvm_inner()))? };
+        Ok(Context(ctx, false, PhantomData))
     }
 
     pub fn int(ctx: &'a Context, bits: usize) -> Result<Type<'a>, Error> {

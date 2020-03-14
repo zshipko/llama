@@ -12,6 +12,10 @@ pub enum Error {
     InvalidPath,
     #[error("Invalid type")]
     InvalidType,
-    #[error("Invalid constant")]
+    #[error("Value is not a constant")]
     InvalidConst,
+    #[error("Value is not a basic block")]
+    InvalidBasicBlock,
+    #[error("Invalid function")]
+    InvalidFunction,
 }

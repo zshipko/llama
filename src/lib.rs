@@ -15,6 +15,16 @@ macro_rules! llvm_inner_impl {
     };
 }
 
+macro_rules! instr {
+    ($x:ident($(&$amp:ident,)? $($n:ident : $t:ty),*$(,)?) $b:block) => {
+        pub fn $x($(& $amp,)? $($n : $t),*) -> Result<Value<'a>, Error> {
+            unsafe {
+                Value::from_inner($b)
+            }
+        }
+    }
+}
+
 extern "C" {
     fn strlen(_: *const std::os::raw::c_char) -> usize;
 }
@@ -23,6 +33,7 @@ mod attribute;
 mod basic_block;
 mod binary;
 mod builder;
+mod codegen;
 mod context;
 mod error;
 mod execution_engine;
@@ -42,6 +53,7 @@ pub use crate::attribute::Attribute;
 pub use crate::basic_block::BasicBlock;
 pub use crate::binary::Binary;
 pub use crate::builder::Builder;
+pub use crate::codegen::Codegen;
 pub use crate::context::Context;
 pub use crate::error::Error;
 pub use crate::execution_engine::ExecutionEngine;

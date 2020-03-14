@@ -8,6 +8,12 @@ pub type ValueKind = llvm::LLVMValueKind;
 
 pub struct Const<'a>(Value<'a>);
 
+impl<'a> AsRef<Value<'a>> for Value<'a> {
+    fn as_ref(&self) -> &Value<'a> {
+        &self
+    }
+}
+
 impl<'a> AsRef<Value<'a>> for Const<'a> {
     fn as_ref(&self) -> &Value<'a> {
         &self.0
@@ -17,16 +23,6 @@ impl<'a> AsRef<Value<'a>> for Const<'a> {
 impl<'a> From<Const<'a>> for Value<'a> {
     fn from(x: Const<'a>) -> Value<'a> {
         x.0
-    }
-}
-
-macro_rules! instr {
-    ($x:ident($(&$amp:ident,)? $($n:ident : $t:ty),*$(,)?) $b:block) => {
-        pub fn $x($(& $amp,)? $($n : $t),*) -> Result<Value<'a>, Error> {
-            unsafe {
-                Value::from_inner($b)
-            }
-        }
     }
 }
 
@@ -53,11 +49,19 @@ impl<'a> Value<'a> {
         Type::from_inner(t)
     }
 
+    pub(crate) fn into_context(self) -> Result<Context<'a>, Error> {
+        self.type_of()?.into_context()
+    }
+
+    pub fn context(&self) -> Result<Context, Error> {
+        self.type_of()?.into_context()
+    }
+
     pub fn name(&self) -> Result<&str, Error> {
         let mut size = 0;
         unsafe {
             let s = llvm::core::LLVMGetValueName2(self.llvm_inner(), &mut size);
-            let s = std::slice::from_raw_parts(s as *const u8, strlen(s));
+            let s = std::slice::from_raw_parts(s as *const u8, size);
             let s = std::str::from_utf8(s)?;
             Ok(s)
         }
@@ -87,6 +91,15 @@ impl<'a> Value<'a> {
         Ok(Const(self))
     }
 
+    pub fn to_basic_block(&self) -> Result<BasicBlock<'a>, Error> {
+        if !self.is_basic_block() {
+            return Err(Error::InvalidBasicBlock);
+        }
+
+        let ptr = unsafe { llvm::core::LLVMValueAsBasicBlock(self.llvm_inner()) };
+        BasicBlock::from_inner(ptr)
+    }
+
     pub fn is_undef(&self) -> bool {
         unsafe { llvm::core::LLVMIsUndef(self.llvm_inner()) == 1 }
     }
@@ -97,6 +110,37 @@ impl<'a> Value<'a> {
 
     pub fn is_constant_string(&self) -> bool {
         unsafe { llvm::core::LLVMIsConstantString(self.llvm_inner()) == 1 }
+    }
+
+    pub fn count_basic_blocks(&self) -> usize {
+        unsafe { llvm::core::LLVMCountBasicBlocks(self.llvm_inner()) as usize }
+    }
+
+    pub fn basic_blocks(&self) -> Vec<BasicBlock<'a>> {
+        let count = self.count_basic_blocks();
+        let ptr = std::ptr::null_mut();
+        unsafe { llvm::core::LLVMGetBasicBlocks(self.llvm_inner(), ptr) }
+        let slice = unsafe { std::slice::from_raw_parts(ptr, count) };
+        slice
+            .into_iter()
+            .map(|x| BasicBlock::from_inner(*x).unwrap())
+            .collect()
+    }
+
+    pub fn first_basic_block(&self) -> Result<BasicBlock<'a>, Error> {
+        BasicBlock::from_inner(unsafe { llvm::core::LLVMGetFirstBasicBlock(self.llvm_inner()) })
+    }
+
+    pub fn last_basic_block(&self) -> Result<BasicBlock<'a>, Error> {
+        BasicBlock::from_inner(unsafe { llvm::core::LLVMGetLastBasicBlock(self.llvm_inner()) })
+    }
+
+    pub fn entry_basic_block(&self) -> Result<BasicBlock<'a>, Error> {
+        BasicBlock::from_inner(unsafe { llvm::core::LLVMGetEntryBasicBlock(self.llvm_inner()) })
+    }
+
+    pub fn append_basic_block(&self, bb: &BasicBlock<'a>) {
+        unsafe { llvm::core::LLVMAppendExistingBasicBlock(self.llvm_inner(), bb.llvm_inner()) }
     }
 }
 
@@ -820,5 +864,46 @@ pub struct Function<'a>(pub(crate) Value<'a>);
 impl<'a> AsRef<Value<'a>> for Function<'a> {
     fn as_ref(&self) -> &Value<'a> {
         &self.0
+    }
+}
+
+impl<'a> From<Function<'a>> for Value<'a> {
+    fn from(x: Function<'a>) -> Value<'a> {
+        x.0
+    }
+}
+
+impl<'a> Function<'a> {
+    pub fn param_count(&self) -> usize {
+        let n = unsafe { llvm::core::LLVMCountParams(self.as_ref().llvm_inner()) };
+        n as usize
+    }
+
+    pub fn params(&self) -> Vec<Value<'a>> {
+        let len = self.param_count();
+        let mut ptr = std::ptr::null_mut();
+
+        unsafe { llvm::core::LLVMGetParams(self.as_ref().llvm_inner(), &mut ptr) }
+        let slice = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
+        slice
+            .into_iter()
+            .map(|x| Value::from_inner(x).unwrap())
+            .collect()
+    }
+
+    /// Verify the function, returning an error on failure
+    pub fn verify(&self) -> Result<(), Error> {
+        let ok = unsafe {
+            llvm::analysis::LLVMVerifyFunction(
+                self.as_ref().llvm_inner(),
+                llvm::analysis::LLVMVerifierFailureAction::LLVMPrintMessageAction,
+            ) == 0
+        };
+
+        if !ok {
+            return Err(Error::InvalidFunction);
+        }
+
+        Ok(())
     }
 }

@@ -100,7 +100,7 @@ mod tests {
         let i32 = llama::Type::int(&context, 32).unwrap();
 
         let ft = llama::FunctionType::new(&i32, &[&i32, &i32], false).unwrap();
-        let f = module.add_function("testing_sub", &ft).unwrap();
+        let f = module.add_function("testing_sub", ft.as_ref()).unwrap();
         builder
             .define_function(&f, |builder, _| {
                 let params = f.params();
@@ -110,7 +110,7 @@ mod tests {
             .unwrap();
 
         let ft = llama::FunctionType::new(&i32, &[&i32, &i32], false).unwrap();
-        let f = module.add_function("testing", &ft).unwrap();
+        let f = module.add_function("testing", ft.as_ref()).unwrap();
         builder
             .define_function(&f, |builder, _| {
                 let params = f.params();

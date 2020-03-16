@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install deps
-      run: sudo apt install llvm-9-dev llvm-9-tools && sudo ln -sf /usr/bin/llvm-config-9 /usr/bin/llvm-config
+      run: sudo apt install llvm-9-dev libclang-9-dev llvm-9-tools && sudo ln -sf /usr/bin/llvm-config-9 /usr/bin/llvm-config
     - name: Run tests
       run: cargo test --verbose --all-features
   macos:
@@ -28,7 +28,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install deps
-      run: sudo apt install llvm-9-dev llvm-9-tools && sudo ln -sf /usr/bin/llvm-config-9 /usr/bin/llvm-config
+      run: sudo apt install llvm-9-dev libclang-9-dev llvm-9-tools && sudo ln -sf /usr/bin/llvm-config-9 /usr/bin/llvm-config
     - name: Nightly
       run: rustup toolchain install nightly
     - name: Run tests
@@ -48,7 +48,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install deps
-      run: sudo apt install llvm-9-dev llvm-9-tools && sudo ln -sf /usr/bin/llvm-config-9 /usr/bin/llvm-config
+      run: sudo apt install llvm-9-dev libclang-9-dev llvm-9-tools && sudo ln -sf /usr/bin/llvm-config-9 /usr/bin/llvm-config
     - name: Nightly
       run: rustup toolchain install nightly
     - name: Run tests

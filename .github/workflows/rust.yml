@@ -20,9 +20,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install deps
-      run: brew install llvm
+      run: brew install llvm && ln -sf /usr/local/opt/llvm/bin/llvm-config /usr/local/bin/llvm-config
     - name: Run tests
-      run: LLVM_CONFIG=/usr/local/opt/llvm/bin/llvm-config cargo test --verbose --all-features --all
+      run: cargo test --verbose --all-features --all
   wasm_linux:
     runs-on: ubuntu-latest
     steps:
@@ -36,6 +36,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install deps
-      run: brew install llvm
+      run: brew install llvm && ln -sf /usr/local/opt/llvm/bin/llvm-config /usr/local/bin/llvm-config
     - name: Run tests
-      run: LLVM_CONFIG=/usr/local/opt/llvm/bin/llvm-config rustup target toolchain install nightly-x86_64-apple-darwin && cargo +nightly test --verbose --all-features --all
+      run: rustup target toolchain install nightly-x86_64-apple-darwin && cargo +nightly test --verbose --all-features --all

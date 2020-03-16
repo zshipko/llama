@@ -8,7 +8,7 @@ edition = "2018"
 anyhow = "1"
 thiserror = "1"
 llama = {path = ".."}
-wasmtime = {version = "0.12", optional = true}
+lightbeam = {version = "0.12"}
 
 [features]
-default = ["wasmtime"]
+default = []

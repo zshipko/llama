@@ -6,10 +6,9 @@ edition = "2018"
 
 [dependencies]
 thiserror = "1"
-llvm-sys = {version = "90", features=[]}
+llvm-sys = {version = "90", features=["no-llvm-linking"]}
 
 [build-dependencies]
-cmake = "0.1"
 
 [workspace]
 members = [

@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("Target is not WASM")]
@@ -9,66 +11,79 @@ pub enum Error {
     #[error("Llama: {0}")]
     Llama(#[from] llama::Error),
 
-    #[error("Error: {0}")]
-    Error(#[from] anyhow::Error),
+    #[error("Lightbeam")]
+    Lightbeam,
 }
 
-#[cfg(feature = "wasmtime")]
-mod wasm {
-    use crate::*;
+pub use lightbeam::ExecutableModule as Exec;
 
-    pub use wasmtime::{Extern, Func, Store};
+pub struct Wasm<'a> {
+    exec: Exec,
+    func_map: BTreeMap<String, usize>,
+    pub module: &'a llama::Module<'a>,
+    pub codegen: llama::Codegen,
+}
 
-    pub struct Wasm<'a> {
-        pub store: &'a wasmtime::Store,
-        pub module: wasmtime::Module,
-        pub instance: wasmtime::Instance,
-    }
+impl<'a> Wasm<'a> {
+    pub fn new<'b>(
+        module: &'a llama::Module,
+        exports: impl AsRef<[&'b str]>,
+    ) -> Result<Wasm<'a>, Error> {
+        if !module.target()?.to_ascii_lowercase().starts_with("wasm") {
+            return Err(Error::InvalidTarget);
+        }
 
-    impl<'a> Wasm<'a> {
-        pub fn new(
-            store: &'a Store,
-            module: &llama::Module,
-            bindings: impl AsRef<[Extern]>,
-        ) -> Result<Wasm<'a>, Error> {
-            if !module.target()?.to_ascii_lowercase().starts_with("wasm") {
-                return Err(Error::InvalidTarget);
+        let mut func_map = BTreeMap::new();
+
+        let mut codegen = llama::Codegen::new()?;
+        codegen.add_module(&module).unwrap();
+
+        let mut index = 0;
+        let exports = exports.as_ref();
+
+        for sym in exports.iter() {
+            codegen.preserve_symbol(sym);
+        }
+
+        let bin = codegen.compile()?;
+
+        let symbols = codegen.symbols();
+        for sym in symbols.into_iter() {
+            println!("SYM: {}", sym);
+            if exports.contains(&sym.as_str()) {
+                println!("EXPORT: {}", sym);
+                func_map.insert(sym.clone(), index);
+                index += 1;
             }
-
-            let mut codegen = llama::Codegen::new()?;
-            codegen.add_module(&module).unwrap();
-            let bin = codegen.compile_optimized()?;
-
-            let mut f = std::fs::File::create("test.wasm").unwrap();
-            std::io::Write::write_all(&mut f, bin).unwrap();
-
-            let module = wasmtime::Module::from_binary(&store, bin)?;
-            let instance = wasmtime::Instance::new(&module, bindings.as_ref())?;
-
-            Ok(Wasm {
-                store,
-                module,
-                instance,
-            })
         }
 
-        pub fn func(&self, name: impl AsRef<str>) -> Result<&Func, Error> {
-            let f = match self.instance.get_export(name.as_ref()) {
-                Some(x) => x,
-                None => return Err(Error::FunctionNotFound(name.as_ref().into())),
-            };
+        let mut f = std::fs::File::create("test.wasm").unwrap();
+        std::io::Write::write_all(&mut f, bin).unwrap();
 
-            let f = match f.func() {
-                Some(x) => x,
-                None => return Err(Error::FunctionNotFound(name.as_ref().into())),
-            };
+        let exec = lightbeam::translate(bin.as_ref()).map_err(|_| Error::Lightbeam)?;
+        Ok(Wasm {
+            module,
+            codegen,
+            exec,
+            func_map,
+        })
+    }
 
-            Ok(f)
-        }
+    pub fn index(&self, name: impl AsRef<str>) -> Option<u32> {
+        self.func_map.get(name.as_ref()).map(|x| *x as u32)
+    }
+
+    pub fn exec(&self) -> &Exec {
+        &self.exec
     }
 }
 
-pub use wasm::*;
+#[macro_export]
+macro_rules! call {
+    ($wasm:ident.$name:ident($($arg:expr),*$(,)?)) => {
+        $wasm.exec().execute_func($wasm.index(stringify!($name)).expect("Invalid function"), ($($arg),*))
+    };
+}
 
 #[cfg(test)]
 mod tests {
@@ -78,11 +93,21 @@ mod tests {
     fn codegen() {
         let context = llama::Context::new().unwrap();
         let mut module = llama::Module::new(&context, "test").unwrap();
-        module.set_target("wasm32-unknown-unknown-wasm");
+        module.set_target("wasm32-unknown-wasi");
 
         let builder = llama::Builder::new(&context).unwrap();
 
         let i32 = llama::Type::int(&context, 32).unwrap();
+
+        let ft = llama::FunctionType::new(&i32, &[&i32, &i32], false).unwrap();
+        let f = module.add_function("testing_sub", &ft).unwrap();
+        builder
+            .define_function(&f, |builder, _| {
+                let params = f.params();
+                let a = builder.sub(&params[0], &params[1], "a")?;
+                builder.ret(&a)
+            })
+            .unwrap();
 
         let ft = llama::FunctionType::new(&i32, &[&i32, &i32], false).unwrap();
         let f = module.add_function("testing", &ft).unwrap();
@@ -96,10 +121,13 @@ mod tests {
 
         println!("{}", module);
 
-        let store = Store::default();
-        let wasm = Wasm::new(&store, &module, &[]).unwrap();
-        let testing = wasm.func("testing").unwrap();
-        let f = testing.get2::<i32, i32, i32>().unwrap();
-        assert_eq!(f(1, 2).unwrap(), 3);
+        let wasm = Wasm::new(&module, &["testing"]).unwrap();
+        println!("{:?}", wasm.func_map);
+
+        let x: i32 = call!(wasm.testing(1i32, 2i32)).unwrap();
+        assert_eq!(x, 3)
+        //let testing = wasm.func("testing").unwrap();
+        //let f = testing.get2::<i32, i32, i32>().unwrap();
+        //assert_eq!(f(1, 2).unwrap(), 3);
     }
 }

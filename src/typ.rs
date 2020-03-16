@@ -236,12 +236,10 @@ impl<'a> FunctionType<'a> {
 
     pub fn params(&self) -> Vec<Type<'a>> {
         let len = self.param_count();
-        let mut ptr = std::ptr::null_mut();
+        let mut data = vec![std::ptr::null_mut(); len];
 
-        unsafe { llvm::core::LLVMGetParamTypes(self.as_ref().llvm_inner(), &mut ptr) }
-        let slice = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
-        slice
-            .into_iter()
+        unsafe { llvm::core::LLVMGetParamTypes(self.as_ref().llvm_inner(), data.as_mut_ptr()) }
+        data.into_iter()
             .map(|x| Type::from_inner(x).unwrap())
             .collect()
     }

@@ -63,4 +63,21 @@ impl<'a> Builder<'a> {
             ))
         }
     }
+
+    pub fn sub(
+        &self,
+        a: impl AsRef<Value<'a>>,
+        b: impl AsRef<Value<'a>>,
+        name: impl AsRef<str>,
+    ) -> Result<Value<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        unsafe {
+            Value::from_inner(llvm::core::LLVMBuildSub(
+                self.llvm_inner(),
+                a.as_ref().llvm_inner(),
+                b.as_ref().llvm_inner(),
+                name.as_ptr(),
+            ))
+        }
+    }
 }

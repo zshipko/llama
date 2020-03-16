@@ -879,14 +879,21 @@ impl<'a> Function<'a> {
         n as usize
     }
 
+    pub fn param(&self, i: usize) -> Result<Value<'a>, Error> {
+        unsafe {
+            Value::from_inner(llvm::core::LLVMGetParam(
+                self.as_ref().llvm_inner(),
+                i as u32,
+            ))
+        }
+    }
+
     pub fn params(&self) -> Vec<Value<'a>> {
         let len = self.param_count();
-        let mut ptr = std::ptr::null_mut();
+        let mut data = vec![std::ptr::null_mut(); len];
 
-        unsafe { llvm::core::LLVMGetParams(self.as_ref().llvm_inner(), &mut ptr) }
-        let slice = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
-        slice
-            .into_iter()
+        unsafe { llvm::core::LLVMGetParams(self.as_ref().llvm_inner(), data.as_mut_ptr()) }
+        data.into_iter()
             .map(|x| Value::from_inner(x).unwrap())
             .collect()
     }
@@ -905,5 +912,15 @@ impl<'a> Function<'a> {
         }
 
         Ok(())
+    }
+
+    pub fn next_function(&self) -> Result<Function<'a>, Error> {
+        let v = unsafe { llvm::core::LLVMGetNextFunction(self.as_ref().llvm_inner()) };
+        Value::from_inner(v).map(|x| Function(x))
+    }
+
+    pub fn previous_function(&self) -> Result<Function<'a>, Error> {
+        let v = unsafe { llvm::core::LLVMGetPreviousFunction(self.as_ref().llvm_inner()) };
+        Value::from_inner(v).map(|x| Function(x))
     }
 }

@@ -3,6 +3,7 @@ name = "llama"
 version = "0.1.0"
 authors = ["Zach Shipko <zachshipko@gmail.com>"]
 edition = "2018"
+links = "LLVM"
 
 [dependencies]
 thiserror = "1"

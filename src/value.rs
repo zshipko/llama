@@ -149,7 +149,7 @@ impl<'a> Const<'a> {
         llvm::core::LLVMConstInt(
             t.as_ref().llvm_inner(),
             i as u64,
-            sign_extend as i32,
+            sign_extend as c_int,
         )
     });
 

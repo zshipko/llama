@@ -16,7 +16,7 @@ macro_rules! llvm_inner_impl {
 }
 
 macro_rules! instr {
-    ($x:ident($(&$amp:ident,)? $($n:ident : $t:ty),*$(,)?) $b:block) => {
+    ($x:ident($(&$amp:ident$(,)?)? $($n:ident : $t:ty),*$(,)?) $b:block) => {
         pub fn $x($(& $amp,)? $($n : $t),*) -> Result<Value<'a>, Error> {
             unsafe {
                 Value::from_inner($b)
@@ -58,7 +58,9 @@ pub use crate::context::Context;
 pub use crate::error::Error;
 pub use crate::execution_engine::ExecutionEngine;
 pub use crate::module::Module;
-pub use crate::pass_manager::PassManager;
+pub use crate::pass_manager::{
+    transforms, FunctionPassManager, ModulePassManager, PassManager, Transform,
+};
 pub use crate::typ::{FunctionType, StructType, Type, TypeKind};
 pub use crate::value::{Const, Function, Value, ValueKind};
 

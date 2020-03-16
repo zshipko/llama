@@ -48,7 +48,7 @@ impl<'a> Wasm<'a> {
         let bin = codegen.compile()?;
 
         let symbols = codegen.symbols();
-        for sym in symbols.into_iter() {
+        for sym in symbols {
             println!("SYM: {}", sym);
             if exports.contains(&sym.as_str()) {
                 println!("EXPORT: {}", sym);
@@ -60,7 +60,7 @@ impl<'a> Wasm<'a> {
         let mut f = std::fs::File::create("test.wasm").unwrap();
         std::io::Write::write_all(&mut f, bin).unwrap();
 
-        let exec = lightbeam::translate(bin.as_ref()).map_err(|_| Error::Lightbeam)?;
+        let exec = lightbeam::translate(bin).map_err(|_| Error::Lightbeam)?;
         Ok(Wasm {
             module,
             codegen,

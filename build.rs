@@ -26,7 +26,7 @@ fn main() {
         Err(_) => lto,
     };
 
-    let out_file = out_dir.join(&lto_file_name);
+    let out_file = out_dir.join(lto_full.file_name().unwrap());
 
     match lto_full.parent() {
         None => {

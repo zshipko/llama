@@ -30,7 +30,7 @@ jobs:
     - name: Install deps
       run: sudo apt install llvm-9-dev llvm-9-tools
     - name: Run tests
-      run: LLVM_CONFIG=llvm-config-9 rustup toolchain install nightly-x86_64-apple-darwin && cargo +nightly test --verbose --all-features --all
+      run: LLVM_CONFIG=llvm-config-9 rustup toolchain install nightly && cargo +nightly test --verbose --all-features --all
   wasm_macos:
     runs-on: macos-latest
     steps:
@@ -38,4 +38,4 @@ jobs:
     - name: Install deps
       run: brew install llvm && ln -sf /usr/local/opt/llvm/bin/llvm-config /usr/local/bin/llvm-config
     - name: Run tests
-      run: rustup toolchain install nightly-x86_64-apple-darwin && cargo +nightly test --verbose --all-features --all
+      run: rustup toolchain install nightly && cargo +nightly test --verbose --all-features --all

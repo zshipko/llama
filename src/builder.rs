@@ -83,7 +83,7 @@ impl<'a> Builder<'a> {
 
     instr!(aggregate_ret(&self, vals: impl AsRef<[&'a Value<'a>]>) {
         let values = vals.as_ref();
-        let mut values: Vec<*mut llvm::LLVMValue> = values.into_iter().map(|x| x.llvm_inner()).collect();
+        let mut values: Vec<*mut llvm::LLVMValue> = values.iter().map(|x| x.llvm_inner()).collect();
         let ptr = values.as_mut_ptr();
         let len = values.len();
         llvm::core::LLVMBuildAggregateRet(self.llvm_inner(), ptr, len as u32)

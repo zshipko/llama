@@ -101,6 +101,10 @@ impl Message {
 
         unsafe { strlen(self.0) }
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 impl AsRef<str> for Message {
@@ -196,6 +200,10 @@ impl MemoryBuffer {
     /// Number of bytes in buffer
     pub fn len(&self) -> usize {
         unsafe { llvm::core::LLVMGetBufferSize(self.0.as_ptr()) }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     /// Write buffer to the specified file

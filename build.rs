@@ -2,7 +2,7 @@ use std::os::unix::fs::PermissionsExt;
 
 fn main() {
     let output = std::process::Command::new(
-        std::env::var("LLVM_CONFIG").unwrap_or("llvm-config".to_string()),
+        std::env::var("LLVM_CONFIG").unwrap_or_else(|_| "llvm-config".to_string()),
     )
     .arg("--prefix")
     .output()

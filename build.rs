@@ -29,9 +29,7 @@ fn main() {
     let out_file = out_dir.join(lto_full.file_name().unwrap());
 
     match lto_full.parent() {
-        None => {
-            std::fs::copy(prefix.join("lib").join(&lto_full), &out_dir.join(&lto_full)).unwrap()
-        }
+        None => std::fs::copy(prefix.join("lib").join(&lto_full), &out_file).unwrap(),
         Some(_) => std::fs::copy(prefix.join("lib").join(&lto_file_name), &out_file).unwrap(),
     };
 

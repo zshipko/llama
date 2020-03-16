@@ -63,6 +63,23 @@ impl<'a> Context<'a> {
         unsafe { Attribute::from_raw(llvm::core::LLVMCreateEnumAttribute(self.llvm_inner(), k, v)) }
     }
 
+    /// Insert a new basic block
+    pub fn insert_basic_block(
+        &self,
+        bb: &BasicBlock<'a>,
+        name: impl AsRef<str>,
+    ) -> Result<BasicBlock<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        let bb = unsafe {
+            llvm::core::LLVMInsertBasicBlockInContext(
+                self.llvm_inner(),
+                bb.llvm_inner(),
+                name.as_ptr(),
+            )
+        };
+        BasicBlock::from_inner(bb)
+    }
+
     // TODO: LLVMContextGetDiagnosticHandler, LLVMContextSetDiagnosticHandler,
     // LLVMContextSetYieldCallback, ...
 }

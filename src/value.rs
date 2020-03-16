@@ -919,7 +919,7 @@ impl<'a> Function<'a> {
         Value::from_inner(v).map(|x| Function(x))
     }
 
-    pub fn previous_function(&self) -> Result<Function<'a>, Error> {
+    pub fn prev_function(&self) -> Result<Function<'a>, Error> {
         let v = unsafe { llvm::core::LLVMGetPreviousFunction(self.as_ref().llvm_inner()) };
         Value::from_inner(v).map(|x| Function(x))
     }

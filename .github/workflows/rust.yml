@@ -1,0 +1,41 @@
+name: Rust
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install deps
+      run: sudo apt llvm-9-dev llvm-9-tools
+    - name: Run tests
+      run: LLVM_CONFIG=llvm-config-9 cargo test --verbose --all-features
+  macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install deps
+      run: brew install llvm
+    - name: Run tests
+      run: LLVM_CONFIG=/usr/local/opt/llvm/bin/llvm-config cargo test --verbose --all-features --all
+  wasm_linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install deps
+      run: sudo apt llvm-9-dev llvm-9-tools
+    - name: Run tests
+      run: LLVM_CONFIG=llvm-config-9 cargo +nightly test --verbose --all-features --all
+  wasm_macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install deps
+      run: brew install llvm
+    - name: Run tests
+      run: LLVM_CONFIG=/usr/local/opt/llvm/bin/llvm-config cargo +nightly test --verbose --all-features --all

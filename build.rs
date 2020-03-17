@@ -30,7 +30,7 @@ fn main() {
 
     match lto_full.parent() {
         None => std::fs::copy(prefix.join("lib").join(&lto_full), &out_file).unwrap(),
-        Some(_) => std::fs::copy(prefix.join("lib").join(&lto_file_name), &out_file).unwrap(),
+        Some(_) => std::fs::copy(prefix.join("lib").join(&lto_full), &out_file).unwrap(),
     };
 
     let meta = std::fs::metadata(&out_file).unwrap();
@@ -42,11 +42,7 @@ fn main() {
     let llvm_file_name = format!("libLLVM.{}", shared_lib);
     let out_file = out_dir.join(&llvm_file_name);
 
-    std::fs::copy(
-        prefix.join("lib").join(&llvm_file_name),
-        &out_dir.join(&llvm_file_name),
-    )
-    .unwrap();
+    std::fs::copy(prefix.join("lib").join(&llvm_file_name), &out_file).unwrap();
 
     let meta = std::fs::metadata(&out_file).unwrap();
     let mut permissions = meta.permissions();

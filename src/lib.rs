@@ -15,11 +15,21 @@ macro_rules! llvm_inner_impl {
     };
 }
 
-macro_rules! instr {
+macro_rules! const_func {
     ($x:ident($(&$amp:ident$(,)?)? $($n:ident : $t:ty),*$(,)?) $b:block) => {
         pub fn $x($(& $amp,)? $($n : $t),*) -> Result<Value<'a>, Error> {
             unsafe {
                 Value::from_inner($b)
+            }
+        }
+    }
+}
+
+macro_rules! instr {
+    ($x:ident($(&$amp:ident$(,)?)? $($n:ident : $t:ty),*$(,)?) $b:block) => {
+        pub fn $x($(& $amp,)? $($n : $t),*) -> Result<Instruction<'a>, Error> {
+            unsafe {
+                Ok(Instruction(Value::from_inner($b)?))
             }
         }
     }
@@ -34,9 +44,11 @@ mod basic_block;
 mod binary;
 mod builder;
 mod codegen;
+mod r#const;
 mod context;
 mod error;
 mod execution_engine;
+mod instr;
 mod module;
 mod pass_manager;
 mod typ;
@@ -57,20 +69,22 @@ pub use crate::codegen::Codegen;
 pub use crate::context::Context;
 pub use crate::error::Error;
 pub use crate::execution_engine::ExecutionEngine;
+pub use crate::instr::Instruction;
 pub use crate::module::Module;
 pub use crate::pass_manager::{
     transforms, FunctionPassManager, ModulePassManager, PassManager, Transform,
 };
+pub use crate::r#const::Const;
 pub use crate::typ::{FunctionType, StructType, Type, TypeKind};
-pub use crate::value::{Const, Function, Value, ValueKind};
+pub use crate::value::{Function, Value, ValueKind};
 
 pub use llvm::{
     object::LLVMBinaryType as BinaryType, LLVMAtomicOrdering as AtomicOrdering,
     LLVMCallConv as CallConv, LLVMDiagnosticSeverity as DiagnosticSeverity,
-    LLVMInlineAsmDialect as InlineAsmDialect, LLVMIntPredicate as IntPredicate,
-    LLVMLinkage as Linkage, LLVMModuleFlagBehavior as ModuleFlagBehavior, LLVMOpcode as OpCode,
-    LLVMRealPredicate as RealPredicate, LLVMThreadLocalMode as ThreadLocalMode,
-    LLVMUnnamedAddr as UnnamedAddr, LLVMVisibility as Visibility,
+    LLVMInlineAsmDialect as InlineAsmDialect, LLVMIntPredicate as ICmp, LLVMLinkage as Linkage,
+    LLVMModuleFlagBehavior as ModuleFlagBehavior, LLVMOpcode as OpCode, LLVMRealPredicate as FCmp,
+    LLVMThreadLocalMode as ThreadLocalMode, LLVMUnnamedAddr as UnnamedAddr,
+    LLVMVisibility as Visibility,
 };
 
 /// Allows for llama types to be converted into LLVM pointers

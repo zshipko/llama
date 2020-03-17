@@ -60,12 +60,12 @@ impl<'a> Builder<'a> {
         &self,
         f: &Function<'a>,
         def: F,
-    ) -> Result<Value, Error> {
+    ) -> Result<Instruction<'a>, Error> {
         let entry = BasicBlock::append(self.context(), f.as_ref(), "entry")?;
         self.position_at_end(&entry);
         let v = def(self, entry)?;
         f.verify()?;
-        Ok(v)
+        Ok(Instruction(v))
     }
 
     instr!(ret_void(&self) {
@@ -97,7 +97,13 @@ impl<'a> Builder<'a> {
         llvm::core::LLVMBuildCondBr(self.llvm_inner(), if_.as_ref().llvm_inner(), then_.llvm_inner(), else_.llvm_inner())
     });
 
-    // Next: BuildSwitch
+    instr!(switch(&self, v: impl AsRef<Value<'a>>, bb: &BasicBlock<'a>, num_cases: usize) {
+        llvm::core::LLVMBuildSwitch(self.llvm_inner(), v.as_ref().llvm_inner(), bb.llvm_inner(), num_cases as c_uint)
+    });
+
+    instr!(indirect_br(&self, addr: impl AsRef<Value<'a>>, num_dests: usize) {
+        llvm::core::LLVMBuildIndirectBr(self.llvm_inner(), addr.as_ref().llvm_inner(), num_dests as c_uint)
+    });
 
     op!(2: add, LLVMBuildAdd);
     op!(2: fadd, LLVMBuildFAdd);

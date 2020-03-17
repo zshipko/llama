@@ -216,5 +216,83 @@ impl<'a> Builder<'a> {
         }
     }
 
-    // TODO: MemSet, MemCpy, ...
+    pub fn alloca(
+        &self,
+        t: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) -> Result<Instruction<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        unsafe {
+            Ok(Instruction(Value::from_inner(
+                llvm::core::LLVMBuildAlloca(
+                    self.llvm_inner(),
+                    t.as_ref().llvm_inner(),
+                    name.as_ptr(),
+                ),
+            )?))
+        }
+    }
+
+    pub fn array_alloca(
+        &self,
+        t: impl AsRef<Type<'a>>,
+        v: impl AsRef<Value<'a>>,
+        name: impl AsRef<str>,
+    ) -> Result<Instruction<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        unsafe {
+            Ok(Instruction(Value::from_inner(
+                llvm::core::LLVMBuildArrayAlloca(
+                    self.llvm_inner(),
+                    t.as_ref().llvm_inner(),
+                    v.as_ref().llvm_inner(),
+                    name.as_ptr(),
+                ),
+            )?))
+        }
+    }
+
+    pub fn free(&self, val: impl AsRef<Value<'a>>) -> Result<Instruction<'a>, Error> {
+        unsafe {
+            Ok(Instruction(Value::from_inner(llvm::core::LLVMBuildFree(
+                self.llvm_inner(),
+                val.as_ref().llvm_inner(),
+            ))?))
+        }
+    }
+
+    op!(1: load, LLVMBuildLoad);
+
+    pub fn load2(
+        &self,
+        t: impl AsRef<Type<'a>>,
+        v: impl AsRef<Value<'a>>,
+        name: impl AsRef<str>,
+    ) -> Result<Instruction<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        unsafe {
+            Ok(Instruction(Value::from_inner(llvm::core::LLVMBuildLoad2(
+                self.llvm_inner(),
+                t.as_ref().llvm_inner(),
+                v.as_ref().llvm_inner(),
+                name.as_ptr(),
+            ))?))
+        }
+    }
+
+    pub fn store(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ptr: impl AsRef<Value<'a>>,
+    ) -> Result<Instruction<'a>, Error> {
+        unsafe {
+            Ok(Instruction(Value::from_inner(llvm::core::LLVMBuildStore(
+                self.llvm_inner(),
+                val.as_ref().llvm_inner(),
+                ptr.as_ref().llvm_inner(),
+            ))?))
+        }
+    }
+
+    // TODO: MemSet, MemCpy, GEP, GEP2 ...
 }

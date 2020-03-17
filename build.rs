@@ -26,7 +26,7 @@ fn main() {
         Err(_) => lto,
     };
 
-    let out_file = out_dir.join(lto_full.file_name().unwrap());
+    let out_file = out_dir.join(lto_file_name);
 
     match lto_full.parent() {
         None => std::fs::copy(prefix.join("lib").join(&lto_full), &out_file).unwrap(),

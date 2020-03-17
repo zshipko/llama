@@ -56,7 +56,10 @@ impl<'a> Builder<'a> {
         unsafe { llvm::core::LLVMPositionBuilderBefore(self.llvm_inner(), value.llvm_inner()) }
     }
 
-    pub fn define_function<F: FnOnce(&Self, BasicBlock<'a>) -> Result<Value<'a>, Error>>(
+    pub fn define_function<
+        T: Into<Value<'a>>,
+        F: FnOnce(&Self, BasicBlock<'a>) -> Result<T, Error>,
+    >(
         &self,
         f: &Function<'a>,
         def: F,
@@ -65,7 +68,7 @@ impl<'a> Builder<'a> {
         self.position_at_end(&entry);
         let v = def(self, entry)?;
         f.verify()?;
-        Ok(Instruction(v))
+        Ok(Instruction(v.into()))
     }
 
     instr!(ret_void(&self) {
@@ -105,10 +108,113 @@ impl<'a> Builder<'a> {
         llvm::core::LLVMBuildIndirectBr(self.llvm_inner(), addr.as_ref().llvm_inner(), num_dests as c_uint)
     });
 
+    instr!(invoke(&self, f: impl AsRef<Value<'a>>, args: impl AsRef<[&'a Value<'a>]>, then: &BasicBlock<'a>, catch: &BasicBlock<'a>, name: impl AsRef<str>) {
+        let name = cstr!(name.as_ref());
+        let mut args: Vec<*mut llvm::LLVMValue> = args.as_ref().iter().map(|x| x.llvm_inner()).collect();
+        llvm::core::LLVMBuildInvoke(self.llvm_inner(), f.as_ref().llvm_inner(), args.as_mut_ptr(), args.len() as c_uint, then.llvm_inner(), catch.llvm_inner(), name.as_ptr())
+    });
+
+    instr!(invoke2(&self, t: impl AsRef<Type<'a>>, f: impl AsRef<Value<'a>>, args: impl AsRef<[&'a Value<'a>]>, then: &BasicBlock<'a>, catch: &BasicBlock<'a>, name: impl AsRef<str>) {
+        let name = cstr!(name.as_ref());
+        let mut args: Vec<*mut llvm::LLVMValue> = args.as_ref().iter().map(|x| x.llvm_inner()).collect();
+        llvm::core::LLVMBuildInvoke2(self.llvm_inner(), t.as_ref().llvm_inner(), f.as_ref().llvm_inner(), args.as_mut_ptr(), args.len() as c_uint, then.llvm_inner(), catch.llvm_inner(), name.as_ptr())
+    });
+
+    instr!(unreachable(&self) {
+        llvm::core::LLVMBuildUnreachable(self.llvm_inner())
+    });
+
+    instr!(resume(&self, exn: impl AsRef<Value<'a>>) {
+        llvm::core::LLVMBuildResume(self.llvm_inner(), exn.as_ref().llvm_inner())
+    });
+
     op!(2: add, LLVMBuildAdd);
+    op!(2: nsw_add, LLVMBuildNSWAdd);
+    op!(2: nuw_add, LLVMBuildNUWAdd);
     op!(2: fadd, LLVMBuildFAdd);
     op!(2: sub, LLVMBuildSub);
+    op!(2: nsw_sub, LLVMBuildNSWSub);
+    op!(2: nuw_sub, LLVMBuildNUWSub);
     op!(2: fsub, LLVMBuildFSub);
     op!(2: mul, LLVMBuildMul);
+    op!(2: nsw_mul, LLVMBuildNSWMul);
+    op!(2: nuw_mul, LLVMBuildNUWMul);
     op!(2: fmul, LLVMBuildFMul);
+    op!(2: udiv, LLVMBuildUDiv);
+    op!(2: exact_udiv, LLVMBuildExactUDiv);
+    op!(2: sdiv, LLVMBuildSDiv);
+    op!(2: exact_sdiv, LLVMBuildExactSDiv);
+    op!(2: fdiv, LLVMBuildFDiv);
+    op!(2: urem, LLVMBuildURem);
+    op!(2: srem, LLVMBuildSRem);
+    op!(2: frem, LLVMBuildFRem);
+    op!(2: shl, LLVMBuildShl);
+    op!(2: lshr, LLVMBuildLShr);
+    op!(2: ashr, LLVMBuildAShr);
+    op!(2: and, LLVMBuildAnd);
+    op!(2: or, LLVMBuildOr);
+    op!(2: xor, LLVMBuildXor);
+
+    pub fn bin_op(
+        &self,
+        op: OpCode,
+        lhs: impl AsRef<Value<'a>>,
+        rhs: impl AsRef<Value<'a>>,
+        name: impl AsRef<str>,
+    ) -> Result<Instruction<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        unsafe {
+            Ok(Instruction(Value::from_inner(llvm::core::LLVMBuildBinOp(
+                self.llvm_inner(),
+                op,
+                lhs.as_ref().llvm_inner(),
+                rhs.as_ref().llvm_inner(),
+                name.as_ptr(),
+            ))?))
+        }
+    }
+
+    op!(1: neg, LLVMBuildNeg);
+    op!(1: nsw_neg, LLVMBuildNSWNeg);
+    op!(1: nuw_neg, LLVMBuildNUWNeg);
+    op!(1: fneg, LLVMBuildFNeg);
+    op!(1: not, LLVMBuildNot);
+
+    pub fn malloc(
+        &self,
+        t: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) -> Result<Instruction<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        unsafe {
+            Ok(Instruction(Value::from_inner(
+                llvm::core::LLVMBuildMalloc(
+                    self.llvm_inner(),
+                    t.as_ref().llvm_inner(),
+                    name.as_ptr(),
+                ),
+            )?))
+        }
+    }
+
+    pub fn array_malloc(
+        &self,
+        t: impl AsRef<Type<'a>>,
+        v: impl AsRef<Value<'a>>,
+        name: impl AsRef<str>,
+    ) -> Result<Instruction<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        unsafe {
+            Ok(Instruction(Value::from_inner(
+                llvm::core::LLVMBuildArrayMalloc(
+                    self.llvm_inner(),
+                    t.as_ref().llvm_inner(),
+                    v.as_ref().llvm_inner(),
+                    name.as_ptr(),
+                ),
+            )?))
+        }
+    }
+
+    // TODO: MemSet, MemCpy, ...
 }

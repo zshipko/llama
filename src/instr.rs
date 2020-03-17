@@ -187,6 +187,20 @@ impl<'a> Instruction<'a> {
             ))
         }
     }
+
+    pub fn switch_add_case(&self, on_val: impl AsRef<Value<'a>>, dest: &BasicBlock<'a>) {
+        unsafe {
+            llvm::core::LLVMAddCase(
+                self.as_ref().llvm_inner(),
+                on_val.as_ref().llvm_inner(),
+                dest.llvm_inner(),
+            )
+        }
+    }
+
+    pub fn indirect_br_add_dest(&self, dest: &BasicBlock<'a>) {
+        unsafe { llvm::core::LLVMAddDestination(self.as_ref().llvm_inner(), dest.llvm_inner()) }
+    }
 }
 
 impl<'a> Clone for Instruction<'a> {

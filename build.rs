@@ -1,4 +1,4 @@
-#[cfg(target_os = "mac_os")]
+#[cfg(target_os = "macos")]
 use std::os::unix::fs::PermissionsExt;
 
 fn main() {

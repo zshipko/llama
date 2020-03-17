@@ -8,4 +8,8 @@ Goals:
 
 **NOTE**: `llama` will let you generate invalid IR, take a look at [inkwell](https://github.com/TheDan64/inkwell) for LLVM bindings with a focus on type-safety
 
+## Docs
 
+## Building
+
+`build.rs` will look for either an executable in the path named `llvm-config` or an environment variable named `LLVM_CONFIG` for setting the correct `llvm-config` executable.

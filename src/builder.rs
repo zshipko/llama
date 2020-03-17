@@ -84,6 +84,86 @@ impl<'a> Builder<'a> {
         Ok(Instruction(v.into()))
     }
 
+    /// If-statement
+    pub fn if_then_else<
+        T: Into<Value<'a>>,
+        E: Into<Value<'a>>,
+        Then: FnOnce(&Builder) -> T,
+        Else: FnOnce(&Builder) -> E,
+    >(
+        &self,
+        cond: impl AsRef<Value<'a>>,
+        then_: Then,
+        else_: Else,
+    ) -> Result<Instruction<'a>, Error> {
+        let ctx = self.context();
+        let start_bb = self.insertion_block()?;
+        let function = start_bb.parent()?;
+        let then_bb = BasicBlock::append(&ctx, &function, "then")?;
+        self.position_at_end(&then_bb);
+        let then_ = then_(self).into();
+        let new_then_bb = self.insertion_block()?;
+        let else_bb = BasicBlock::append(&ctx, &function, "else")?;
+        self.position_at_end(&else_bb);
+        let else_ = else_(self).into();
+        let new_else_bb = self.insertion_block()?;
+        let merge_bb = BasicBlock::append(&ctx, &function, "ifcont")?;
+        self.position_at_end(&merge_bb);
+
+        self.position_at_end(&start_bb);
+        self.cond_br(cond, &then_bb, &else_bb)?;
+
+        self.position_at_end(&new_then_bb);
+        self.br(&merge_bb)?;
+
+        self.position_at_end(&new_else_bb);
+        self.br(&merge_bb)?;
+
+        self.position_at_end(&merge_bb);
+
+        let phi = self.phi(then_.type_of()?, "ite")?;
+        phi.phi_add_incoming(&[(&then_, &new_then_bb), (&else_, &new_else_bb)]);
+        Ok(phi)
+    }
+
+    /// For-loop
+    pub fn for_loop<
+        S: Into<Value<'a>>,
+        C: Into<Value<'a>>,
+        X: Into<Value<'a>>,
+        Step: FnOnce(&Builder, &Instruction) -> S,
+        Cond: FnOnce(&Builder, &Value) -> C,
+        F: FnOnce(&Builder, &Instruction) -> X,
+    >(
+        &self,
+        start: impl AsRef<Value<'a>>,
+        step: Step,
+        cond: Cond,
+        f: F,
+    ) -> Result<Instruction<'a>, Error> {
+        let ctx = self.context();
+        let preheader_bb = self.insertion_block()?;
+        let function = preheader_bb.parent()?;
+        let loop_bb = BasicBlock::append(&ctx, &function, "loop")?;
+        self.br(&loop_bb)?;
+        self.position_at_end(&loop_bb);
+
+        let var = self.phi(start.as_ref().type_of()?, "for_loop")?;
+        var.phi_add_incoming(&[(start.as_ref(), &preheader_bb)]);
+
+        let _loop = f(self, &var);
+
+        let next = step(self, &var).into();
+        let cond = cond(self, &next).into();
+        let loop_end_bb = self.insertion_block()?;
+        let after_bb = BasicBlock::append(&ctx, &function, "after")?;
+        self.cond_br(cond, &loop_bb, &after_bb)?;
+        self.position_at_end(&after_bb);
+
+        var.phi_add_incoming(&[(&next, &loop_end_bb)]);
+        Ok(var)
+    }
+
     instr!(ret_void(&self) {
         llvm::core::LLVMBuildRetVoid(
             self.llvm_inner(),
@@ -779,5 +859,64 @@ impl<'a> Builder<'a> {
             ty.as_ref().llvm_inner(),
             name.as_ptr(),
         )
+    });
+
+    instr!(call(&self, f: &Function<'a>, args: impl AsRef<[&'a Value<'a>]>, name: impl AsRef<str>) {
+        let name = cstr!(name.as_ref());
+        let mut values: Vec<*mut llvm::LLVMValue> = args.as_ref().iter().map(|x| x.llvm_inner()).collect();
+        let ptr = values.as_mut_ptr();
+        let len = values.len();
+
+        llvm::core::LLVMBuildCall(self.llvm_inner(), f.as_ref().llvm_inner(), ptr, len as c_uint, name.as_ptr())
+    });
+
+    instr!(call2(&self, t: impl AsRef<Type<'a>>, f: &Function<'a>, args: impl AsRef<[&'a Value<'a>]>, name: impl AsRef<str>) {
+        let name = cstr!(name.as_ref());
+        let mut values: Vec<*mut llvm::LLVMValue> = args.as_ref().iter().map(|x| x.llvm_inner()).collect();
+        let ptr = values.as_mut_ptr();
+        let len = values.len();
+
+        llvm::core::LLVMBuildCall2(self.llvm_inner(), t.as_ref().llvm_inner(), f.as_ref().llvm_inner(), ptr, len as c_uint, name.as_ptr())
+    });
+
+    op!(3: select, LLVMBuildSelect);
+
+    instr!(va_arg(&self, list: impl AsRef<Value<'a>>, ty: impl AsRef<Type<'a>>, name: impl AsRef<str>) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildVAArg(self.llvm_inner(), list.as_ref().llvm_inner(), ty.as_ref().llvm_inner(), name.as_ptr())
+    });
+
+    op!(2: extract_element, LLVMBuildExtractElement);
+    op!(3: insert_element, LLVMBuildInsertElement);
+    op!(3: shuffle_vector, LLVMBuildShuffleVector);
+
+    instr!(extract_value(&self, vec: impl AsRef<Value<'a>>, index: usize, name: impl AsRef<str>) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildExtractValue(self.llvm_inner(), vec.as_ref().llvm_inner(), index as c_uint, name.as_ptr())
+    });
+
+    instr!(insert_value(&self, vec: impl AsRef<Value<'a>>, val: impl AsRef<Value<'a>>, index: usize, name: impl AsRef<str>) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildInsertValue(self.llvm_inner(), vec.as_ref().llvm_inner(), val.as_ref().llvm_inner(), index as c_uint, name.as_ptr())
+    });
+
+    op!(1: is_null, LLVMBuildIsNull);
+    op!(1: is_not_null, LLVMBuildIsNotNull);
+    op!(2: ptr_diff, LLVMBuildPtrDiff);
+
+    instr!(fence(&self, ordering: AtomicOrdering, single_thread: bool, name: impl AsRef<str>) {
+        let name = cstr!(name.as_ref());
+        let single_thread = if single_thread { 1 } else { 0 };
+        llvm::core::LLVMBuildFence(self.llvm_inner(), ordering, single_thread, name.as_ptr())
+    });
+
+    instr!(atomic_rmw(&self, op: AtomicRMWBinOp, ptr: impl AsRef<Value<'a>>, val: impl AsRef<Value<'a>>, ordering: AtomicOrdering, single_thread: bool) {
+        let single_thread = if single_thread { 1 } else { 0 };
+        llvm::core::LLVMBuildAtomicRMW(self.llvm_inner(), op, ptr.as_ref().llvm_inner(), val.as_ref().llvm_inner(), ordering, single_thread)
+    });
+
+    instr!(atomic_cmp_xchg(&self, ptr: impl AsRef<Value<'a>>, cmp: impl AsRef<Value<'a>>, new_: impl AsRef<Value<'a>>, success_ordering: AtomicOrdering, failure_ordering: AtomicOrdering, single_thread: bool) {
+        let single_thread = if single_thread { 1 } else { 0 };
+        llvm::core::LLVMBuildAtomicCmpXchg(self.llvm_inner(), ptr.as_ref().llvm_inner(), cmp.as_ref().llvm_inner(), new_.as_ref().llvm_inner(), success_ordering, failure_ordering, single_thread)
     });
 }

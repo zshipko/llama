@@ -80,11 +80,11 @@ pub use crate::value::{Function, Value, ValueKind};
 
 pub use llvm::{
     object::LLVMBinaryType as BinaryType, LLVMAtomicOrdering as AtomicOrdering,
-    LLVMCallConv as CallConv, LLVMDiagnosticSeverity as DiagnosticSeverity,
-    LLVMInlineAsmDialect as InlineAsmDialect, LLVMIntPredicate as ICmp, LLVMLinkage as Linkage,
-    LLVMModuleFlagBehavior as ModuleFlagBehavior, LLVMOpcode as OpCode, LLVMRealPredicate as FCmp,
-    LLVMThreadLocalMode as ThreadLocalMode, LLVMUnnamedAddr as UnnamedAddr,
-    LLVMVisibility as Visibility,
+    LLVMAtomicRMWBinOp as AtomicRMWBinOp, LLVMCallConv as CallConv,
+    LLVMDiagnosticSeverity as DiagnosticSeverity, LLVMInlineAsmDialect as InlineAsmDialect,
+    LLVMIntPredicate as ICmp, LLVMLinkage as Linkage, LLVMModuleFlagBehavior as ModuleFlagBehavior,
+    LLVMOpcode as OpCode, LLVMRealPredicate as FCmp, LLVMThreadLocalMode as ThreadLocalMode,
+    LLVMUnnamedAddr as UnnamedAddr, LLVMVisibility as Visibility,
 };
 
 /// Allows for llama types to be converted into LLVM pointers

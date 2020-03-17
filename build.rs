@@ -23,15 +23,17 @@ fn main() {
     let lto = prefix.join("lib").join(&lto_file_name);
     let lto_full = match std::fs::read_link(&lto) {
         Ok(x) => x,
-        Err(_) => lto,
+        Err(_) => lto.clone(),
     };
 
-    let out_file = out_dir.join(lto_file_name);
+    let out_file = out_dir.join(&lto_file_name);
 
-    match lto_full.parent() {
-        None => std::fs::copy(prefix.join("lib").join(&lto_full), &out_file).unwrap(),
-        Some(_) => std::fs::copy(prefix.join("lib").join(&lto_full), &out_file).unwrap(),
-    };
+    if lto_full != lto {
+        std::fs::copy(prefix.join("lib").join(&lto_file_name), &out_file).unwrap();
+        std::fs::copy(&lto_full, out_dir.join(lto_full.file_name().unwrap())).unwrap();
+    } else {
+        std::fs::copy(prefix.join("lib").join(&lto_full), &out_file).unwrap();
+    }
 
     let meta = std::fs::metadata(&out_file).unwrap();
     let mut permissions = meta.permissions();

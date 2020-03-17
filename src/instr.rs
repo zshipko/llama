@@ -15,6 +15,10 @@ impl<'a> From<Instruction<'a>> for Value<'a> {
 }
 
 impl<'a> Instruction<'a> {
+    pub fn from_inner(ptr: *mut llvm::LLVMValue) -> Result<Self, Error> {
+        Ok(Instruction(Value::from_inner(ptr)?))
+    }
+
     pub fn parent(&self) -> Result<BasicBlock<'a>, Error> {
         unsafe {
             BasicBlock::from_inner(llvm::core::LLVMGetInstructionParent(

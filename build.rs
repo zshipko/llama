@@ -46,7 +46,7 @@ fn main() {
     }
 
     // Copy LLVM lib
-    let llvm_file_name = format!("libLLVM.{}", shared_lib);
+    /*let llvm_file_name = format!("libLLVM.{}", shared_lib);
     let out_file = out_dir.join(&llvm_file_name);
 
     std::fs::copy(prefix.join("lib").join(&llvm_file_name), &out_file).unwrap();
@@ -57,9 +57,10 @@ fn main() {
         let mut permissions = meta.permissions();
         permissions.set_mode(0o755);
         std::fs::set_permissions(&out_file, permissions).unwrap();
-    }
+    }*/
 
     println!("cargo:rustc-link-search=native={}", out_dir.display());
-    println!("cargo:rustc-link-lib=LLVM");
+    //println!("cargo:rustc-link-lib=LLVM");
     println!("cargo:rustc-link-lib=LTO");
+    println!("cargo:rustc-link-lib=ffi");
 }

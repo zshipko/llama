@@ -29,7 +29,7 @@ macro_rules! instr {
     ($x:ident($(&$amp:ident$(,)?)? $($n:ident : $t:ty),*$(,)?) $b:block) => {
         pub fn $x($(& $amp,)? $($n : $t),*) -> Result<Instruction<'a>, Error> {
             unsafe {
-                Ok(Instruction(Value::from_inner($b)?))
+                Instruction::from_inner($b)
             }
         }
     }

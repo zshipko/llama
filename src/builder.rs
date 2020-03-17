@@ -193,119 +193,591 @@ impl<'a> Builder<'a> {
     op!(1: fneg, LLVMBuildFNeg);
     op!(1: not, LLVMBuildNot);
 
-    pub fn malloc(
+    instr!(malloc(
         &self,
         t: impl AsRef<Type<'a>>,
         name: impl AsRef<str>,
-    ) -> Result<Instruction<'a>, Error> {
+    ) {
         let name = cstr!(name.as_ref());
-        unsafe {
-            Ok(Instruction(Value::from_inner(
-                llvm::core::LLVMBuildMalloc(
-                    self.llvm_inner(),
-                    t.as_ref().llvm_inner(),
-                    name.as_ptr(),
-                ),
-            )?))
-        }
-    }
+        llvm::core::LLVMBuildMalloc(
+            self.llvm_inner(),
+            t.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
 
-    pub fn array_malloc(
+    instr!(array_malloc(
         &self,
         t: impl AsRef<Type<'a>>,
         v: impl AsRef<Value<'a>>,
         name: impl AsRef<str>,
-    ) -> Result<Instruction<'a>, Error> {
+    ){
         let name = cstr!(name.as_ref());
-        unsafe {
-            Ok(Instruction(Value::from_inner(
-                llvm::core::LLVMBuildArrayMalloc(
-                    self.llvm_inner(),
-                    t.as_ref().llvm_inner(),
-                    v.as_ref().llvm_inner(),
-                    name.as_ptr(),
-                ),
-            )?))
-        }
-    }
+        llvm::core::LLVMBuildArrayMalloc(
+            self.llvm_inner(),
+            t.as_ref().llvm_inner(),
+            v.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
 
-    pub fn alloca(
+    instr!(memset(
         &self,
-        t: impl AsRef<Type<'a>>,
-        name: impl AsRef<str>,
-    ) -> Result<Instruction<'a>, Error> {
-        let name = cstr!(name.as_ref());
-        unsafe {
-            Ok(Instruction(Value::from_inner(
-                llvm::core::LLVMBuildAlloca(
-                    self.llvm_inner(),
-                    t.as_ref().llvm_inner(),
-                    name.as_ptr(),
-                ),
-            )?))
-        }
-    }
+        ptr: impl AsRef<Value<'a>>,
+        val: impl AsRef<Value<'a>>,
+        len: impl AsRef<Value<'a>>,
+        align: usize,
+    ) {
+        llvm::core::LLVMBuildMemSet(
+            self.llvm_inner(),
+            ptr.as_ref().llvm_inner(),
+            val.as_ref().llvm_inner(),
+            len.as_ref().llvm_inner(),
+            align as c_uint,
+        )
+    });
 
-    pub fn array_alloca(
+    instr!(memcpy(
+        &self,
+        dst: impl AsRef<Value<'a>>,
+        dst_align: usize,
+        src: impl AsRef<Value<'a>>,
+        src_align: usize,
+        len: impl AsRef<Value<'a>>,
+    ) {
+        llvm::core::LLVMBuildMemCpy(
+            self.llvm_inner(),
+            dst.as_ref().llvm_inner(),
+            dst_align as c_uint,
+            src.as_ref().llvm_inner(),
+            src_align as c_uint,
+            len.as_ref().llvm_inner(),
+        )
+    });
+
+    instr!(memmove(
+        &self,
+        dst: impl AsRef<Value<'a>>,
+        dst_align: usize,
+        src: impl AsRef<Value<'a>>,
+        src_align: usize,
+        len: impl AsRef<Value<'a>>,
+    ) {
+        llvm::core::LLVMBuildMemMove(
+            self.llvm_inner(),
+            dst.as_ref().llvm_inner(),
+            dst_align as c_uint,
+            src.as_ref().llvm_inner(),
+            src_align as c_uint,
+            len.as_ref().llvm_inner(),
+        )
+    });
+
+    instr!(alloca(&self, t: impl AsRef<Type<'a>>, name: impl AsRef<str>) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildAlloca(
+            self.llvm_inner(),
+            t.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(array_alloca(
         &self,
         t: impl AsRef<Type<'a>>,
         v: impl AsRef<Value<'a>>,
         name: impl AsRef<str>,
-    ) -> Result<Instruction<'a>, Error> {
+    ) {
         let name = cstr!(name.as_ref());
-        unsafe {
-            Ok(Instruction(Value::from_inner(
-                llvm::core::LLVMBuildArrayAlloca(
-                    self.llvm_inner(),
-                    t.as_ref().llvm_inner(),
-                    v.as_ref().llvm_inner(),
-                    name.as_ptr(),
-                ),
-            )?))
-        }
-    }
+        llvm::core::LLVMBuildArrayAlloca(
+            self.llvm_inner(),
+            t.as_ref().llvm_inner(),
+            v.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
 
-    pub fn free(&self, val: impl AsRef<Value<'a>>) -> Result<Instruction<'a>, Error> {
-        unsafe {
-            Ok(Instruction(Value::from_inner(llvm::core::LLVMBuildFree(
-                self.llvm_inner(),
-                val.as_ref().llvm_inner(),
-            ))?))
-        }
-    }
+    instr!(free(&self, val: impl AsRef<Value<'a>>) {
+        llvm::core::LLVMBuildFree(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+        )
+    });
 
     op!(1: load, LLVMBuildLoad);
 
-    pub fn load2(
-        &self,
-        t: impl AsRef<Type<'a>>,
-        v: impl AsRef<Value<'a>>,
-        name: impl AsRef<str>,
-    ) -> Result<Instruction<'a>, Error> {
+    instr!(load2(&self, t: impl AsRef<Type<'a>>, v: impl AsRef<Value<'a>>, name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
-        unsafe {
-            Ok(Instruction(Value::from_inner(llvm::core::LLVMBuildLoad2(
-                self.llvm_inner(),
-                t.as_ref().llvm_inner(),
-                v.as_ref().llvm_inner(),
-                name.as_ptr(),
-            ))?))
-        }
-    }
+        llvm::core::LLVMBuildLoad2(
+            self.llvm_inner(),
+            t.as_ref().llvm_inner(),
+            v.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
 
-    pub fn store(
+    instr!(store(&self, val: impl AsRef<Value<'a>>, ptr: impl AsRef<Value<'a>>) {
+        llvm::core::LLVMBuildStore(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ptr.as_ref().llvm_inner(),
+        )
+    });
+
+    instr!(gep(
+        &self,
+        ptr: impl AsRef<Value<'a>>,
+        indices: impl AsRef<[&'a Value<'a>]>,
+        name: impl AsRef<str>,
+    ) {
+        let mut v: Vec<*mut llvm::LLVMValue> =
+            indices.as_ref().iter().map(|x| x.llvm_inner()).collect();
+        let len = indices.as_ref().len();
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildGEP(
+            self.llvm_inner(),
+            ptr.as_ref().llvm_inner(),
+            v.as_mut_ptr(),
+            len as c_uint,
+            name.as_ptr(),
+        )
+    });
+
+    instr!(in_bounds_gep(
+        &self,
+        ptr: impl AsRef<Value<'a>>,
+        indices: impl AsRef<[&'a Value<'a>]>,
+        name: impl AsRef<str>,
+    ) {
+        let mut v: Vec<*mut llvm::LLVMValue> =
+            indices.as_ref().iter().map(|x| x.llvm_inner()).collect();
+        let len = indices.as_ref().len();
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildInBoundsGEP(
+            self.llvm_inner(),
+            ptr.as_ref().llvm_inner(),
+            v.as_mut_ptr(),
+            len as c_uint,
+            name.as_ptr(),
+        )
+    });
+
+    instr!(in_struct_gep(&self, ptr: impl AsRef<Value<'a>>, index: usize, name: impl AsRef<str>) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildStructGEP(
+            self.llvm_inner(),
+            ptr.as_ref().llvm_inner(),
+            index as c_uint,
+            name.as_ptr(),
+        )
+    });
+
+    instr!(gep2(
+        &self,
+        ty: impl AsRef<Type<'a>>,
+        ptr: impl AsRef<Value<'a>>,
+        indices: impl AsRef<[&'a Value<'a>]>,
+        name: impl AsRef<str>,
+    ) {
+        let mut v: Vec<*mut llvm::LLVMValue> =
+            indices.as_ref().iter().map(|x| x.llvm_inner()).collect();
+        let len = indices.as_ref().len();
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildGEP2(
+            self.llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            ptr.as_ref().llvm_inner(),
+            v.as_mut_ptr(),
+            len as c_uint,
+            name.as_ptr(),
+        )
+    });
+
+    instr!(in_bounds_gep2(
+        &self,
+        ty: impl AsRef<Type<'a>>,
+        ptr: impl AsRef<Value<'a>>,
+        indices: impl AsRef<[&'a Value<'a>]>,
+        name: impl AsRef<str>,
+    ) {
+        let mut v: Vec<*mut llvm::LLVMValue> =
+            indices.as_ref().iter().map(|x| x.llvm_inner()).collect();
+        let len = indices.as_ref().len();
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildInBoundsGEP2(
+            self.llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            ptr.as_ref().llvm_inner(),
+            v.as_mut_ptr(),
+            len as c_uint,
+            name.as_ptr(),
+        )
+    });
+
+    instr!(in_struct_gep2(
+        &self,
+        ty: impl AsRef<Type<'a>>,
+        ptr: impl AsRef<Value<'a>>,
+        index: usize,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildStructGEP2(
+            self.llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            ptr.as_ref().llvm_inner(),
+            index as c_uint,
+            name.as_ptr(),
+        )
+    });
+
+    instr!(global_string(&self, s: impl AsRef<str>, name: impl AsRef<str>) {
+        let s = cstr!(s.as_ref());
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildGlobalString(
+            self.llvm_inner(),
+            s.as_ptr(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(global_string_ptr(&self, s: impl AsRef<str>, name: impl AsRef<str>) {
+        let s = cstr!(s.as_ref());
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildGlobalStringPtr(
+            self.llvm_inner(),
+            s.as_ptr(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(trunc(
         &self,
         val: impl AsRef<Value<'a>>,
-        ptr: impl AsRef<Value<'a>>,
-    ) -> Result<Instruction<'a>, Error> {
-        unsafe {
-            Ok(Instruction(Value::from_inner(llvm::core::LLVMBuildStore(
-                self.llvm_inner(),
-                val.as_ref().llvm_inner(),
-                ptr.as_ref().llvm_inner(),
-            ))?))
-        }
-    }
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildTrunc(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
 
-    // TODO: MemSet, MemCpy, GEP, GEP2 ...
+    instr!(zext(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildZExt(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(sext(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildSExt(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(fp_to_ui(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildFPToUI(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(fp_to_si(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildFPToSI(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(ui_to_fp(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildUIToFP(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(si_to_fp(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildSIToFP(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(fp_trunc(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildFPTrunc(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(fp_ext(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildFPExt(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(ptr_to_int(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildPtrToInt(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(int_to_ptr(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildIntToPtr(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(bit_cast(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildBitCast(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(addr_space_cast(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildAddrSpaceCast(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(zext_or_bit_cast(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildZExtOrBitCast(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(sext_or_bit_cast(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildSExtOrBitCast(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(trunc_or_bit_cast(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildTruncOrBitCast(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(pointer_cast(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildPointerCast(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(int_cast(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+        signed: bool,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildIntCast2(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            if signed { 1 } else { 0 },
+            name.as_ptr(),
+        )
+    });
+
+    instr!(fp_cast(
+        &self,
+        val: impl AsRef<Value<'a>>,
+        ty: impl AsRef<Type<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildFPCast(
+            self.llvm_inner(),
+            val.as_ref().llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(icmp(
+        &self,
+        op: ICmp,
+        lhs: impl AsRef<Value<'a>>,
+        rhs: impl AsRef<Value<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildICmp(
+            self.llvm_inner(),
+            op,
+            lhs.as_ref().llvm_inner(),
+            rhs.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(fcmp(
+        &self,
+        op: FCmp,
+        lhs: impl AsRef<Value<'a>>,
+        rhs: impl AsRef<Value<'a>>,
+        name: impl AsRef<str>,
+    ) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildFCmp(
+            self.llvm_inner(),
+            op,
+            lhs.as_ref().llvm_inner(),
+            rhs.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
+
+    instr!(phi(&self, ty: impl AsRef<Type<'a>>, name: impl AsRef<str>) {
+        let name = cstr!(name.as_ref());
+        llvm::core::LLVMBuildPhi(
+            self.llvm_inner(),
+            ty.as_ref().llvm_inner(),
+            name.as_ptr(),
+        )
+    });
 }

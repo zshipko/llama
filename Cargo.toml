@@ -3,11 +3,10 @@ name = "llama"
 version = "0.1.0"
 authors = ["Zach Shipko <zachshipko@gmail.com>"]
 edition = "2018"
-links = "LLVM"
 
 [dependencies]
 thiserror = "1"
-llvm-sys = {version = "90" } #features=["no-llvm-linking"]}
+llvm-sys = {version = "90"}
 
 [build-dependencies]
 

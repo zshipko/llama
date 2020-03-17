@@ -110,7 +110,7 @@ impl<'a> Instruction<'a> {
         unsafe { llvm::core::LLVMIsInBounds(self.as_ref().llvm_inner()) == 1 }
     }
 
-    pub fn set_gep_in_bounds(&self, b: bool) {
+    pub fn set_gep_in_bounds(&mut self, b: bool) {
         unsafe { llvm::core::LLVMSetIsInBounds(self.as_ref().llvm_inner(), if b { 1 } else { 0 }) }
     }
 
@@ -134,7 +134,7 @@ impl<'a> Instruction<'a> {
         unsafe { llvm::core::LLVMIsTailCall(self.as_ref().llvm_inner()) == 1 }
     }
 
-    pub fn set_tail_call(&self, b: bool) {
+    pub fn set_tail_call(&mut self, b: bool) {
         unsafe { llvm::core::LLVMSetTailCall(self.as_ref().llvm_inner(), if b { 1 } else { 0 }) }
     }
 
@@ -151,7 +151,7 @@ impl<'a> Instruction<'a> {
         }
     }
 
-    pub fn terminator_set_successor(&self, index: usize, bb: &BasicBlock<'a>) {
+    pub fn terminator_set_successor(&mut self, index: usize, bb: &BasicBlock<'a>) {
         unsafe {
             llvm::core::LLVMSetSuccessor(
                 self.as_ref().llvm_inner(),
@@ -174,7 +174,7 @@ impl<'a> Instruction<'a> {
         unsafe { Value::from_inner(llvm::core::LLVMGetCondition(self.as_ref().llvm_inner())) }
     }
 
-    pub fn terminator_set_condition(&self, cond: impl AsRef<Value<'a>>) {
+    pub fn terminator_set_condition(&mut self, cond: impl AsRef<Value<'a>>) {
         unsafe {
             llvm::core::LLVMSetCondition(self.as_ref().llvm_inner(), cond.as_ref().llvm_inner())
         }

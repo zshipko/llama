@@ -7,7 +7,7 @@ links = "LLVM"
 
 [dependencies]
 thiserror = "1"
-llvm-sys = {version = "90", features=["no-llvm-linking"]}
+llvm-sys = {version = "90" } #features=["no-llvm-linking"]}
 
 [build-dependencies]
 

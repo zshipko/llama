@@ -20,14 +20,40 @@ impl<'a> Drop for Context<'a> {
 }
 
 impl<'a> Context<'a> {
+    fn init() {
+        unsafe {
+            llvm::target::LLVM_InitializeNativeTarget();
+            llvm::target::LLVM_InitializeNativeAsmPrinter();
+            llvm::target::LLVM_InitializeNativeAsmParser();
+
+            llvm::target::LLVMInitializeWebAssemblyTarget();
+            llvm::target::LLVMInitializeWebAssemblyAsmPrinter();
+            llvm::target::LLVMInitializeWebAssemblyAsmParser();
+
+            llvm::target::LLVMInitializeAArch64Target();
+            llvm::target::LLVMInitializeAArch64AsmPrinter();
+            llvm::target::LLVMInitializeAArch64AsmParser();
+
+            llvm::target::LLVMInitializeARMTarget();
+            llvm::target::LLVMInitializeARMAsmPrinter();
+            llvm::target::LLVMInitializeARMAsmParser();
+
+            llvm::target::LLVMInitializeX86Target();
+            llvm::target::LLVMInitializeX86AsmPrinter();
+            llvm::target::LLVMInitializeX86AsmParser();
+        }
+    }
+
     /// Create a new context
     pub fn new() -> Result<Self, Error> {
+        Self::init();
         let ctx = unsafe { wrap_inner(llvm::core::LLVMContextCreate())? };
         Ok(Context(ctx, true, PhantomData))
     }
 
     /// Return the global context
     pub fn global() -> Result<Self, Error> {
+        Self::init();
         let ctx = unsafe { wrap_inner(llvm::core::LLVMGetGlobalContext())? };
         Ok(Context(ctx, false, PhantomData))
     }
@@ -43,24 +69,6 @@ impl<'a> Context<'a> {
 
     pub fn discard_value_names(&mut self) -> bool {
         unsafe { llvm::core::LLVMContextShouldDiscardValueNames(self.llvm_inner()) == 1 }
-    }
-
-    /// Create a string attribute
-    pub fn create_string_attribute(&'a self, k: &str, v: &str) -> Result<Attribute<'a>, Error> {
-        unsafe {
-            Attribute::from_raw(llvm::core::LLVMCreateStringAttribute(
-                self.llvm_inner(),
-                k.as_ptr() as *const i8,
-                k.len() as u32,
-                v.as_ptr() as *const i8,
-                v.len() as u32,
-            ))
-        }
-    }
-
-    /// Create an enum attribute
-    pub fn create_enum_attribute(&'a self, k: u32, v: u64) -> Result<Attribute<'a>, Error> {
-        unsafe { Attribute::from_raw(llvm::core::LLVMCreateEnumAttribute(self.llvm_inner(), k, v)) }
     }
 
     /// Insert a new basic block

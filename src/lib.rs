@@ -247,11 +247,43 @@ impl Drop for MemoryBuffer {
 #[cfg(test)]
 mod tests {
     use crate::*;
+
     #[test]
-    fn it_works() {
+    fn codegen() {
         let context = Context::new().unwrap();
-        let module = Module::new(&context, "testing").unwrap();
-        let i32 = Type::int(&context, 32);
-        assert_eq!(module.identifier().unwrap(), "testing");
+        let mut module = Module::new(&context, "test").unwrap();
+
+        let builder = Builder::new(&context).unwrap();
+
+        let i32 = Type::int(&context, 32).unwrap();
+
+        let ft = FunctionType::new(&i32, &[&i32, &i32], false).unwrap();
+        let f = module.add_function("testing_sub", ft.as_ref()).unwrap();
+        builder
+            .define_function(&f, |builder, _| {
+                let params = f.params();
+                let a = builder.sub(&params[0], &params[1], "a")?;
+                builder.ret(&a)
+            })
+            .unwrap();
+
+        let ft = FunctionType::new(&i32, &[&i32, &i32], false).unwrap();
+        let f = module.add_function("testing", ft.as_ref()).unwrap();
+        builder
+            .define_function(&f, |builder, _| {
+                let params = f.params();
+                let a = builder.add(&params[0], &params[1], "a")?;
+                builder.ret(&a)
+            })
+            .unwrap();
+
+        println!("{}", module);
+
+        let engine = ExecutionEngine::new_mcjit(&module, 2).unwrap();
+
+        let testing: unsafe extern "C" fn(i32, i32) -> i32 = engine.function("testing").unwrap();
+
+        let x: i32 = unsafe { testing(1i32, 2i32) };
+        assert_eq!(x, 3)
     }
 }

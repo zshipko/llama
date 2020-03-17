@@ -202,4 +202,82 @@ impl<'a> Function<'a> {
         let v = unsafe { llvm::core::LLVMGetPreviousFunction(self.as_ref().llvm_inner()) };
         Value::from_inner(v).map(Function)
     }
+
+    pub fn delete(self) {
+        unsafe { llvm::core::LLVMDeleteFunction(self.as_ref().llvm_inner()) }
+    }
+
+    pub fn has_personality_fn(&self) -> bool {
+        unsafe { llvm::core::LLVMHasPersonalityFn(self.as_ref().llvm_inner()) == 1 }
+    }
+
+    pub fn personality_fn(&self) -> Result<Value<'a>, Error> {
+        unsafe { Value::from_inner(llvm::core::LLVMGetPersonalityFn(self.as_ref().llvm_inner())) }
+    }
+
+    pub fn set_personality_fn(&mut self, f: impl AsRef<Value<'a>>) {
+        unsafe {
+            llvm::core::LLVMSetPersonalityFn(self.as_ref().llvm_inner(), f.as_ref().llvm_inner())
+        }
+    }
+
+    pub fn gc(&self) -> Option<&str> {
+        let gc = unsafe { llvm::core::LLVMGetGC(self.as_ref().llvm_inner()) };
+        if gc.is_null() {
+            return None;
+        }
+
+        unsafe {
+            let slice = std::slice::from_raw_parts(gc as *const u8, strlen(gc));
+            Some(std::str::from_utf8_unchecked(slice))
+        }
+    }
+
+    pub fn set_gc(&mut self, name: impl AsRef<str>) {
+        let name = cstr!(name.as_ref());
+        unsafe { llvm::core::LLVMSetGC(self.as_ref().llvm_inner(), name.as_ptr()) }
+    }
+
+    pub fn call_conv(&self) -> CallConv {
+        unsafe {
+            std::mem::transmute(llvm::core::LLVMGetFunctionCallConv(
+                self.as_ref().llvm_inner(),
+            ))
+        }
+    }
+
+    pub fn set_call_conv(&mut self, conv: CallConv) {
+        unsafe { llvm::core::LLVMSetFunctionCallConv(self.as_ref().llvm_inner(), conv as u32) }
+    }
+
+    pub fn add_attribute_at_index(&mut self, index: usize, attr: &Attribute<'a>) {
+        unsafe {
+            llvm::core::LLVMAddAttributeAtIndex(
+                self.as_ref().llvm_inner(),
+                index as c_uint,
+                attr.llvm_inner(),
+            )
+        }
+    }
+
+    pub fn attributes(&self, index: usize) -> Vec<Attribute<'a>> {
+        let count = unsafe {
+            llvm::core::LLVMGetAttributeCountAtIndex(self.as_ref().llvm_inner(), index as c_uint)
+        };
+
+        let mut output = vec![std::ptr::null_mut(); count as usize];
+
+        unsafe {
+            llvm::core::LLVMGetAttributesAtIndex(
+                self.as_ref().llvm_inner(),
+                index as c_uint,
+                output.as_mut_ptr(),
+            );
+        }
+
+        output
+            .into_iter()
+            .map(|x| Attribute::from_inner(x).unwrap())
+            .collect()
+    }
 }

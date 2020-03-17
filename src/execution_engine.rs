@@ -18,18 +18,20 @@ impl<'a> Drop for ExecutionEngine<'a> {
 
 impl<'a> ExecutionEngine<'a> {
     pub fn new(module: &'a Module) -> Result<ExecutionEngine<'a>, Error> {
+        unsafe { llvm::execution_engine::LLVMLinkInInterpreter() }
+
         let mut engine = std::ptr::null_mut();
         let mut message = std::ptr::null_mut();
         let r = unsafe {
             llvm::execution_engine::LLVMCreateExecutionEngineForModule(
                 &mut engine,
-                module.llvm_inner(),
+                llvm::core::LLVMCloneModule(module.llvm_inner()),
                 &mut message,
             ) == 1
         };
 
         let message = Message::from_raw(message);
-        if !r {
+        if r {
             return Err(Error::Message(message));
         }
 
@@ -37,40 +39,51 @@ impl<'a> ExecutionEngine<'a> {
     }
 
     pub fn new_jit(module: &'a Module, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
+        unsafe { llvm::execution_engine::LLVMLinkInMCJIT() }
+
         let mut engine = std::ptr::null_mut();
         let mut message = std::ptr::null_mut();
         let r = unsafe {
             llvm::execution_engine::LLVMCreateJITCompilerForModule(
                 &mut engine,
-                module.llvm_inner(),
+                llvm::core::LLVMCloneModule(module.llvm_inner()),
                 opt as u32,
                 &mut message,
             ) == 1
         };
 
         let message = Message::from_raw(message);
-        if !r {
+        if r {
             return Err(Error::Message(message));
         }
 
         Ok(ExecutionEngine(wrap_inner(engine)?, PhantomData))
     }
 
-    pub fn new_mcjit(module: &'a Module) -> Result<ExecutionEngine<'a>, Error> {
+    pub fn new_mcjit(module: &'a Module, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
+        unsafe { llvm::execution_engine::LLVMLinkInMCJIT() }
+
+        let mut opts = llvm::execution_engine::LLVMMCJITCompilerOptions {
+            OptLevel: opt as c_uint,
+            CodeModel: llvm::target_machine::LLVMCodeModel::LLVMCodeModelJITDefault,
+            NoFramePointerElim: 0,
+            EnableFastISel: 0,
+            MCJMM: std::ptr::null_mut(),
+        };
         let mut engine = std::ptr::null_mut();
         let mut message = std::ptr::null_mut();
         let r = unsafe {
             llvm::execution_engine::LLVMCreateMCJITCompilerForModule(
                 &mut engine,
-                module.llvm_inner(),
-                std::ptr::null_mut(),
-                0,
+                llvm::core::LLVMCloneModule(module.llvm_inner()),
+                &mut opts,
+                std::mem::size_of::<llvm::execution_engine::LLVMMCJITCompilerOptions>(),
                 &mut message,
             ) == 1
         };
 
         let message = Message::from_raw(message);
-        if !r {
+        if r {
             return Err(Error::Message(message));
         }
 
@@ -94,7 +107,7 @@ impl<'a> ExecutionEngine<'a> {
         Value::from_inner(ptr)
     }
 
-    pub fn global<T>(&self, global: impl AsRef<Value<'a>>) -> Result<T, Error> {
+    pub fn global<T>(&self, global: impl AsRef<Value<'a>>) -> Result<*mut T, Error> {
         let ptr = unsafe {
             llvm::execution_engine::LLVMGetPointerToGlobal(
                 self.llvm_inner(),

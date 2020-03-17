@@ -126,8 +126,5 @@ mod tests {
 
         let x: i32 = call!(wasm.testing(1i32, 2i32)).unwrap();
         assert_eq!(x, 3)
-        //let testing = wasm.func("testing").unwrap();
-        //let f = testing.get2::<i32, i32, i32>().unwrap();
-        //assert_eq!(f(1, 2).unwrap(), 3);
     }
 }

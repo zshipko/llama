@@ -1,4 +1,4 @@
-name: rustdoc
+name: Documentation
 on:
   push:
    branches:
@@ -12,8 +12,10 @@ jobs:
       CARGO_INCREMENTAL: 0
 
     steps:
-    - name: Checkout repository and install dependencies
+    - name: Checkout repository
       uses: actions/checkout@v2
+
+    - name: Install dependencies
       run: sudo apt install llvm-9-dev libclang-9-dev llvm-9-tools && sudo ln -sf /usr/bin/llvm-config-9 /usr/bin/llvm-config
 
     - name: Install Rust toolchain

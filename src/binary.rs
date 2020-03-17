@@ -11,6 +11,7 @@ impl<'a> Drop for Binary<'a> {
 }
 
 impl<'a> Binary<'a> {
+    /// Create a new binary object
     pub fn new(ctx: &Context, data: &MemoryBuffer) -> Result<Binary<'a>, Error> {
         let mut message = std::ptr::null_mut();
         let bin = unsafe {
@@ -25,10 +26,12 @@ impl<'a> Binary<'a> {
         }
     }
 
+    /// Get binary file type
     pub fn get_type(&self) -> BinaryType {
         unsafe { llvm::object::LLVMBinaryGetType(self.llvm_inner()) }
     }
 
+    /// Write binary object to file
     pub fn write_to_file(&self, path: impl AsRef<std::path::Path>) -> Result<(), Error> {
         let buffer = unsafe { llvm::object::LLVMBinaryCopyMemoryBuffer(self.llvm_inner()) };
         let buf = MemoryBuffer::from_raw(buffer)?;

@@ -1,5 +1,6 @@
 use crate::*;
 
+/// A `Builder` is used to create `Instruction`s
 pub struct Builder<'a>(NonNull<llvm::LLVMBuilder>, &'a Context<'a>);
 
 llvm_inner_impl!(Builder<'a>, llvm::LLVMBuilder);
@@ -39,11 +40,13 @@ macro_rules! op {
 }
 
 impl<'a> Builder<'a> {
+    /// Create a new builder
     pub fn new(ctx: &'a Context) -> Result<Builder<'a>, Error> {
         let b = unsafe { wrap_inner(llvm::core::LLVMCreateBuilderInContext(ctx.llvm_inner()))? };
         Ok(Builder(b, ctx))
     }
 
+    /// Get the builder's context
     pub fn context(&self) -> &'a Context<'a> {
         self.1
     }
@@ -54,6 +57,16 @@ impl<'a> Builder<'a> {
 
     pub fn position_before(&self, value: &Value<'a>) {
         unsafe { llvm::core::LLVMPositionBuilderBefore(self.llvm_inner(), value.llvm_inner()) }
+    }
+
+    /// Clear insertion position
+    pub fn clear_insertion_position(&self) {
+        unsafe { llvm::core::LLVMClearInsertionPosition(self.llvm_inner()) }
+    }
+
+    /// Get the insertion block
+    pub fn insertion_block(&self) -> Result<BasicBlock<'a>, Error> {
+        unsafe { BasicBlock::from_inner(llvm::core::LLVMGetInsertBlock(self.llvm_inner())) }
     }
 
     pub fn define_function<

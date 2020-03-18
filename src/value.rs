@@ -6,6 +6,30 @@ llvm_inner_impl!(Value<'a>, llvm::LLVMValue);
 
 pub type ValueKind = llvm::LLVMValueKind;
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum AttributeIndex {
+    Return,
+    Param(u32),
+    Function,
+}
+
+impl AttributeIndex {
+    pub(crate) fn get_index(&self) -> u32 {
+        match self {
+            AttributeIndex::Return => llvm::LLVMAttributeReturnIndex,
+            AttributeIndex::Param(index) => {
+                assert!(
+                    *index <= u32::max_value() - 2,
+                    "Param index must be <= u32::max_value() - 2"
+                );
+
+                index + 1
+            }
+            AttributeIndex::Function => llvm::LLVMAttributeFunctionIndex,
+        }
+    }
+}
+
 impl<'a> AsRef<Value<'a>> for Value<'a> {
     fn as_ref(&self) -> &Value<'a> {
         &self
@@ -22,6 +46,10 @@ impl<'a> Value<'a> {
     pub(crate) fn from_inner(ptr: *mut llvm::LLVMValue) -> Result<Value<'a>, Error> {
         let t = wrap_inner(ptr)?;
         Ok(Value(t, PhantomData))
+    }
+
+    pub fn into_metadata(self) -> Metadata<'a> {
+        Metadata(self)
     }
 
     pub fn is_basic_block(&self) -> bool {
@@ -256,11 +284,11 @@ impl<'a> Function<'a> {
         unsafe { llvm::core::LLVMSetFunctionCallConv(self.as_ref().llvm_inner(), conv as u32) }
     }
 
-    pub fn add_attribute_at_index(&mut self, index: usize, attr: &Attribute<'a>) {
+    pub fn add_attribute(&mut self, index: AttributeIndex, attr: &Attribute<'a>) {
         unsafe {
             llvm::core::LLVMAddAttributeAtIndex(
                 self.as_ref().llvm_inner(),
-                index as c_uint,
+                index.get_index(),
                 attr.llvm_inner(),
             )
         }

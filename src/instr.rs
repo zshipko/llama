@@ -205,6 +205,25 @@ impl<'a> Instruction<'a> {
     pub fn indirect_br_add_dest(&self, dest: &BasicBlock<'a>) {
         unsafe { llvm::core::LLVMAddDestination(self.as_ref().llvm_inner(), dest.llvm_inner()) }
     }
+
+    pub fn has_metadata(&self) -> bool {
+        unsafe { llvm::core::LLVMHasMetadata(self.as_ref().llvm_inner()) == 1 }
+    }
+
+    pub fn get_metadata(&self, id: u32) -> Result<Metadata<'a>, Error> {
+        unsafe {
+            Ok(Metadata(Value::from_inner(llvm::core::LLVMGetMetadata(
+                self.as_ref().llvm_inner(),
+                id,
+            ))?))
+        }
+    }
+
+    pub fn set_metadata(&self, id: u32, meta: &Metadata<'a>) {
+        unsafe {
+            llvm::core::LLVMSetMetadata(self.as_ref().llvm_inner(), id, meta.as_ref().llvm_inner())
+        }
+    }
 }
 
 impl<'a> Clone for Instruction<'a> {

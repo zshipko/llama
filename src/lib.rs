@@ -49,6 +49,7 @@ mod context;
 mod error;
 mod execution_engine;
 mod instr;
+mod metadata;
 mod module;
 mod pass_manager;
 mod typ;
@@ -70,13 +71,14 @@ pub use crate::context::Context;
 pub use crate::error::Error;
 pub use crate::execution_engine::ExecutionEngine;
 pub use crate::instr::Instruction;
+pub use crate::metadata::Metadata;
 pub use crate::module::Module;
 pub use crate::pass_manager::{
     transforms, FunctionPassManager, ModulePassManager, PassManager, Transform,
 };
 pub use crate::r#const::Const;
 pub use crate::typ::{FunctionType, StructType, Type, TypeKind};
-pub use crate::value::{Function, Value, ValueKind};
+pub use crate::value::{AttributeIndex, Function, Value, ValueKind};
 
 pub use llvm::{
     object::LLVMBinaryType as BinaryType, LLVMAtomicOrdering as AtomicOrdering,

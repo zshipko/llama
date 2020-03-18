@@ -90,6 +90,14 @@ impl<'a> Context<'a> {
         BasicBlock::from_inner(bb)
     }
 
+    pub fn md_kind_id(&self, name: impl AsRef<str>) -> u32 {
+        let len = name.as_ref().len();
+        let name = cstr!(name.as_ref());
+        unsafe {
+            llvm::core::LLVMGetMDKindIDInContext(self.llvm_inner(), name.as_ptr(), len as u32)
+        }
+    }
+
     // TODO: LLVMContextGetDiagnosticHandler, LLVMContextSetDiagnosticHandler,
     // LLVMContextSetYieldCallback, ...
 }

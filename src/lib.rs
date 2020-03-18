@@ -52,6 +52,7 @@ mod instr;
 mod metadata;
 mod module;
 mod pass_manager;
+mod target;
 mod typ;
 mod value;
 
@@ -77,16 +78,18 @@ pub use crate::pass_manager::{
     transforms, FunctionPassManager, ModulePassManager, PassManager, Transform,
 };
 pub use crate::r#const::Const;
+pub use crate::target::TargetData;
 pub use crate::typ::{FunctionType, StructType, Type, TypeKind};
 pub use crate::value::{AttributeIndex, Function, Value, ValueKind};
 
 pub use llvm::{
-    object::LLVMBinaryType as BinaryType, LLVMAtomicOrdering as AtomicOrdering,
-    LLVMAtomicRMWBinOp as AtomicRMWBinOp, LLVMCallConv as CallConv,
-    LLVMDiagnosticSeverity as DiagnosticSeverity, LLVMInlineAsmDialect as InlineAsmDialect,
-    LLVMIntPredicate as ICmp, LLVMLinkage as Linkage, LLVMModuleFlagBehavior as ModuleFlagBehavior,
-    LLVMOpcode as OpCode, LLVMRealPredicate as FCmp, LLVMThreadLocalMode as ThreadLocalMode,
-    LLVMUnnamedAddr as UnnamedAddr, LLVMVisibility as Visibility,
+    object::LLVMBinaryType as BinaryType, target::LLVMByteOrdering as ByteOrder,
+    LLVMAtomicOrdering as AtomicOrdering, LLVMAtomicRMWBinOp as AtomicRMWBinOp,
+    LLVMCallConv as CallConv, LLVMDiagnosticSeverity as DiagnosticSeverity,
+    LLVMInlineAsmDialect as InlineAsmDialect, LLVMIntPredicate as ICmp, LLVMLinkage as Linkage,
+    LLVMModuleFlagBehavior as ModuleFlagBehavior, LLVMOpcode as OpCode, LLVMRealPredicate as FCmp,
+    LLVMThreadLocalMode as ThreadLocalMode, LLVMUnnamedAddr as UnnamedAddr,
+    LLVMVisibility as Visibility,
 };
 
 /// Allows for llama types to be converted into LLVM pointers

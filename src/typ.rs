@@ -85,6 +85,26 @@ impl<'a> Type<'a> {
         }
     }
 
+    pub fn i64(ctx: &'a Context) -> Result<Type<'a>, Error> {
+        Self::int(ctx, 64)
+    }
+
+    pub fn i32(ctx: &'a Context) -> Result<Type<'a>, Error> {
+        Self::int(ctx, 32)
+    }
+
+    pub fn i16(ctx: &'a Context) -> Result<Type<'a>, Error> {
+        Self::int(ctx, 16)
+    }
+
+    pub fn i8(ctx: &'a Context) -> Result<Type<'a>, Error> {
+        Self::int(ctx, 8)
+    }
+
+    pub fn i1(ctx: &'a Context) -> Result<Type<'a>, Error> {
+        Self::int(ctx, 1)
+    }
+
     pub fn is(&self, kind: TypeKind) -> bool {
         self.kind() == kind
     }

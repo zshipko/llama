@@ -82,7 +82,7 @@ mod tests {
     fn codegen() -> Result<(), Error> {
         let context = llama::Context::new()?;
         let mut module = llama::Module::new(&context, "test")?;
-        module.set_target("wasm32");
+        module.set_wasm32();
 
         let builder = llama::Builder::new(&context)?;
 
@@ -111,6 +111,40 @@ mod tests {
 
         let x: i32 = call!(wasm.testing(1i32, 2i32))?;
         assert_eq!(x, 3);
+        Ok(())
+    }
+
+    #[test]
+    fn test_for_loop() -> Result<(), Error> {
+        use llama::*;
+
+        let ctx = Context::new()?;
+        let mut module = Module::new(&ctx, "test_for_loop")?;
+        module.set_wasm32();
+        let builder = Builder::new(&ctx)?;
+
+        let i64 = Type::int(&ctx, 64)?;
+        let ft = FunctionType::new(&i64, &[&i64], false)?;
+        let f = module.add_function("testing", &ft)?;
+        builder.define_function(&f, |builder, _| {
+            let params = f.params();
+            let one = Const::int(&i64, 1, true)?;
+            let f = builder.for_loop(
+                Const::int(&i64, 0, true)?,
+                |x| builder.add(x, one, "add"),
+                |x| builder.icmp(ICmp::LLVMIntSLE, x, &params[0], "cond"),
+                |_| Const::int(&i64, 0, true),
+            )?;
+            builder.ret(f)
+        })?;
+
+        println!("{}", module);
+
+        let wasm = Wasm::new(&module, &["testing"])?;
+        println!("{:?}", wasm.func_map);
+
+        let x: i64 = call!(wasm.testing(9i64))?;
+        assert_eq!(x, 9);
         Ok(())
     }
 }

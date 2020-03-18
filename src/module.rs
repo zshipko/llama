@@ -295,6 +295,20 @@ impl<'a> Module<'a> {
             ))
         }
     }
+
+    pub fn set_wasm32(&mut self) {
+        self.set_target("wasm32");
+        self.set_data_layout("p:32:32:32");
+    }
+
+    pub fn set_target_data(&mut self, target: &TargetData) {
+        unsafe { llvm::target::LLVMSetModuleDataLayout(self.llvm_inner(), target.llvm_inner()) }
+    }
+
+    pub fn target_data(&self) -> Result<TargetData, Error> {
+        let x = unsafe { llvm::target::LLVMGetModuleDataLayout(self.llvm_inner()) };
+        TargetData::from_inner(x)
+    }
 }
 
 impl<'a> std::fmt::Display for Module<'a> {

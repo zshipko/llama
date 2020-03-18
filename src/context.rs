@@ -43,6 +43,14 @@ impl<'a> Context<'a> {
             llvm::target::LLVMInitializeX86Target();
             llvm::target::LLVMInitializeX86AsmPrinter();
             llvm::target::LLVMInitializeX86AsmParser();
+
+            llvm::target::LLVMInitializePowerPCTarget();
+            llvm::target::LLVMInitializePowerPCAsmPrinter();
+            llvm::target::LLVMInitializePowerPCAsmParser();
+
+            llvm::target::LLVMInitializeSparcTarget();
+            llvm::target::LLVMInitializeSparcAsmPrinter();
+            llvm::target::LLVMInitializeSparcAsmParser();
         });
     }
 

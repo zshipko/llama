@@ -139,4 +139,10 @@ impl<'a> ExecutionEngine<'a> {
             )
         }
     }
+
+    pub fn target_data(&self) -> Result<TargetData, Error> {
+        let x =
+            unsafe { llvm::execution_engine::LLVMGetExecutionEngineTargetData(self.llvm_inner()) };
+        TargetData::from_inner(x)
+    }
 }

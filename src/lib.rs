@@ -17,7 +17,7 @@ macro_rules! llvm_inner_impl {
 
 macro_rules! const_func {
     ($x:ident($(&$amp:ident$(,)?)? $($n:ident : $t:ty),*$(,)?) $b:block) => {
-        pub fn $x($(& $amp,)? $($n : $t),*) -> Result<Value<'a>, Error> {
+        pub fn $x<'b>($(& $amp,)? $($n : $t),*) -> Result<Value<'b>, Error> {
             unsafe {
                 Value::from_inner($b)
             }
@@ -27,7 +27,7 @@ macro_rules! const_func {
 
 macro_rules! instr {
     ($x:ident($(&$amp:ident$(,)?)? $($n:ident : $t:ty),*$(,)?) $b:block) => {
-        pub fn $x($(& $amp,)? $($n : $t),*) -> Result<Instruction<'a>, Error> {
+        pub fn $x<'b>($(& $amp,)? $($n : $t),*) -> Result<Instruction<'b>, Error> {
             unsafe {
                 Instruction::from_inner($b)
             }
@@ -59,7 +59,7 @@ pub(crate) use std::marker::PhantomData;
 pub(crate) use std::os::raw::{c_char, c_int, c_uint};
 pub(crate) use std::ptr::NonNull;
 
-pub(crate) use llvm_sys as llvm;
+pub use llvm_sys as llvm;
 
 pub use crate::attribute::Attribute;
 pub use crate::basic_block::BasicBlock;
@@ -244,46 +244,126 @@ impl Drop for MemoryBuffer {
     }
 }
 
+pub fn load_library(filename: impl AsRef<str>) -> bool {
+    let filename = cstr!(filename.as_ref());
+    unsafe { llvm::support::LLVMLoadLibraryPermanently(filename.as_ptr()) == 0 }
+}
+
+pub fn add_symbol<T>(filename: impl AsRef<str>, x: &mut T) {
+    let filename = cstr!(filename.as_ref());
+    unsafe { llvm::support::LLVMAddSymbol(filename.as_ptr(), x as *mut T as *mut c_void) }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::*;
 
     #[test]
-    fn codegen() {
-        let context = Context::new().unwrap();
-        let mut module = Module::new(&context, "test").unwrap();
+    fn codegen() -> Result<(), Error> {
+        let context = Context::new()?;
+        let mut module = Module::new(&context, "test")?;
 
-        let builder = Builder::new(&context).unwrap();
+        let builder = Builder::new(&context)?;
 
-        let i32 = Type::int(&context, 32).unwrap();
+        let i32 = Type::int(&context, 32)?;
 
-        let ft = FunctionType::new(&i32, &[&i32, &i32], false).unwrap();
-        let f = module.add_function("testing_sub", ft.as_ref()).unwrap();
-        builder
-            .define_function(&f, |builder, _| {
-                let params = f.params();
-                let a = builder.sub(&params[0], &params[1], "a")?;
-                builder.ret(&a)
-            })
-            .unwrap();
-
-        let ft = FunctionType::new(&i32, &[&i32, &i32], false).unwrap();
-        let f = module.add_function("testing", ft.as_ref()).unwrap();
-        builder
-            .define_function(&f, |builder, _| {
-                let params = f.params();
-                let a = builder.add(&params[0], &params[1], "a")?;
-                builder.ret(&a)
-            })
-            .unwrap();
+        let ft = FunctionType::new(&i32, &[&i32, &i32], false)?;
+        let f = module.add_function("testing", &ft)?;
+        builder.define_function(&f, |builder, _| {
+            let params = f.params();
+            let a = builder.add(&params[0], &params[1], "a")?;
+            builder.ret(&a)
+        })?;
 
         println!("{}", module);
 
-        let engine = ExecutionEngine::new_mcjit(&module, 2).unwrap();
+        let engine = ExecutionEngine::new_mcjit(&module, 2)?;
 
-        let testing: unsafe extern "C" fn(i32, i32) -> i32 = engine.function("testing").unwrap();
+        let testing: unsafe extern "C" fn(i32, i32) -> i32 = engine.function("testing")?;
 
         let x: i32 = unsafe { testing(1i32, 2i32) };
-        assert_eq!(x, 3)
+        assert_eq!(x, 3);
+        Ok(())
+    }
+
+    #[test]
+    fn if_then_else() -> Result<(), Error> {
+        let ctx = Context::new()?;
+        let mut module = Module::new(&ctx, "test")?;
+        let builder = Builder::new(&ctx)?;
+
+        let f32 = Type::float(&ctx)?;
+        let ft = FunctionType::new(&f32, &[&f32], false)?;
+        let f = module.add_function("testing", &ft)?;
+        builder.define_function(&f, |builder, _| {
+            let params = f.params();
+            let cond = builder.fcmp(
+                FCmp::LLVMRealULT,
+                &params[0],
+                Const::real(&f32, 10.0)?,
+                "cond",
+            )?;
+            let a = Const::real(&f32, 1.0)?;
+            let b = Const::real(&f32, 2.0)?;
+            let ite = builder.if_then_else(cond, |_| Ok(a), |_| Ok(b))?;
+            builder.ret(ite)
+        })?;
+
+        println!("{}", module);
+
+        let engine = ExecutionEngine::new(&module)?;
+        let testing: unsafe extern "C" fn(f32) -> f32 = engine.function("testing")?;
+        let x = unsafe { testing(11.0) };
+        let y = unsafe { testing(9.0) };
+
+        assert_eq!(x, 2.0);
+        assert_eq!(y, 1.0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn for_loop() -> Result<(), Error> {
+        let ctx = Context::new()?;
+        let mut module = Module::new(&ctx, "test")?;
+        let builder = Builder::new(&ctx)?;
+
+        let i32 = Type::int(&ctx, 32)?;
+        let i64 = Type::int(&ctx, 64)?;
+        let i8 = Type::int(&ctx, 8)?;
+
+        let i8ptr = i8.pointer(None)?;
+        let printf_t = FunctionType::new(&i32, &[&i8ptr, &i64], false)?;
+        let printf = module.add_function("printf", &printf_t)?;
+
+        let i64 = Type::int(&ctx, 64)?;
+        let ft = FunctionType::new(&i64, &[&i64], false)?;
+        let f = module.add_function("testing", &ft)?;
+        builder.define_function(&f, |builder, _| {
+            let params = f.params();
+            let one = Const::int(&i64, 1, true)?;
+            let fmt = builder.global_string_ptr("%ld\n", "fmt")?;
+            let f = builder.for_loop(
+                Const::int(&i64, 0, true)?,
+                |x| builder.add(x, one, "add"),
+                |x| builder.icmp(ICmp::LLVMIntSLT, x, &params[0], "cond"),
+                |x| builder.call(&printf, &[fmt.as_ref(), x], "print"),
+            )?;
+            builder.ret(f)
+        })?;
+
+        println!("{}", module);
+
+        let engine = ExecutionEngine::new(&module)?;
+        let testing: unsafe extern "C" fn(i64) -> i64 = engine.function("testing")?;
+        let x = unsafe { testing(10) };
+
+        println!("{}", x);
+        assert_eq!(x, 9);
+
+        let x = unsafe { testing(100) };
+        assert_eq!(x, 99);
+
+        Ok(())
     }
 }

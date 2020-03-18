@@ -12,6 +12,12 @@ impl<'a> AsRef<Value<'a>> for Value<'a> {
     }
 }
 
+impl<'a> Clone for Value<'a> {
+    fn clone(&self) -> Value<'a> {
+        Value(self.0.clone(), PhantomData)
+    }
+}
+
 impl<'a> Value<'a> {
     pub(crate) fn from_inner(ptr: *mut llvm::LLVMValue) -> Result<Value<'a>, Error> {
         let t = wrap_inner(ptr)?;

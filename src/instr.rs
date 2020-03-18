@@ -67,7 +67,10 @@ impl<'a> Instruction<'a> {
         unsafe { Type::from_inner(llvm::core::LLVMGetAllocatedType(self.as_ref().llvm_inner())) }
     }
 
-    pub fn phi_add_incoming(&self, items: impl AsRef<[(&'a Value<'a>, &'a BasicBlock<'a>)]>) {
+    pub fn phi_add_incoming<'b>(
+        &'b self,
+        items: impl AsRef<[(&'b Value<'a>, &'b BasicBlock<'a>)]>,
+    ) {
         let mut values: Vec<*mut llvm::LLVMValue> =
             items.as_ref().iter().map(|(v, _)| v.llvm_inner()).collect();
 

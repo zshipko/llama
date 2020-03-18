@@ -5,6 +5,12 @@ pub struct BasicBlock<'a>(NonNull<llvm::LLVMBasicBlock>, PhantomData<&'a ()>);
 
 llvm_inner_impl!(BasicBlock<'a>, llvm::LLVMBasicBlock);
 
+impl<'a> Clone for BasicBlock<'a> {
+    fn clone(&self) -> BasicBlock<'a> {
+        BasicBlock(self.0, PhantomData)
+    }
+}
+
 impl<'a> BasicBlock<'a> {
     pub fn from_inner(ptr: *mut llvm::LLVMBasicBlock) -> Result<Self, Error> {
         Ok(BasicBlock(wrap_inner(ptr)?, PhantomData))

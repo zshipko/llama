@@ -143,10 +143,14 @@ impl<'a> Module<'a> {
         Ok(())
     }
 
-    pub fn add_function(&mut self, name: impl AsRef<str>, t: &Type) -> Result<Function<'a>, Error> {
+    pub fn add_function(
+        &mut self,
+        name: impl AsRef<str>,
+        t: &FunctionType,
+    ) -> Result<Function<'a>, Error> {
         let name = cstr!(name.as_ref());
         let value = unsafe {
-            llvm::core::LLVMAddFunction(self.llvm_inner(), name.as_ptr(), t.llvm_inner())
+            llvm::core::LLVMAddFunction(self.llvm_inner(), name.as_ptr(), t.as_ref().llvm_inner())
         };
         Ok(Function(Value::from_inner(value)?))
     }
@@ -246,6 +250,16 @@ impl<'a> Module<'a> {
         unsafe {
             let other = llvm::core::LLVMCloneModule(other.llvm_inner());
             llvm::linker::LLVMLinkModules2(self.llvm_inner(), other) == 1
+        }
+    }
+
+    pub fn type_by_name(&self, name: impl AsRef<str>) -> Result<Type<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        unsafe {
+            Type::from_inner(llvm::core::LLVMGetTypeByName(
+                self.llvm_inner(),
+                name.as_ptr(),
+            ))
         }
     }
 }

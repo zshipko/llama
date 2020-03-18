@@ -88,8 +88,8 @@ impl<'a> Builder<'a> {
     pub fn if_then_else<
         T: Into<Value<'a>>,
         E: Into<Value<'a>>,
-        Then: FnOnce(&Builder) -> T,
-        Else: FnOnce(&Builder) -> E,
+        Then: FnOnce(&Builder<'a>) -> Result<T, Error>,
+        Else: FnOnce(&Builder<'a>) -> Result<E, Error>,
     >(
         &self,
         cond: impl AsRef<Value<'a>>,
@@ -101,11 +101,11 @@ impl<'a> Builder<'a> {
         let function = start_bb.parent()?;
         let then_bb = BasicBlock::append(&ctx, &function, "then")?;
         self.position_at_end(&then_bb);
-        let then_ = then_(self).into();
+        let then_ = then_(self)?.into();
         let new_then_bb = self.insertion_block()?;
         let else_bb = BasicBlock::append(&ctx, &function, "else")?;
         self.position_at_end(&else_bb);
-        let else_ = else_(self).into();
+        let else_ = else_(self)?.into();
         let new_else_bb = self.insertion_block()?;
         let merge_bb = BasicBlock::append(&ctx, &function, "ifcont")?;
         self.position_at_end(&merge_bb);
@@ -131,9 +131,9 @@ impl<'a> Builder<'a> {
         S: Into<Value<'a>>,
         C: Into<Value<'a>>,
         X: Into<Value<'a>>,
-        Step: FnOnce(&Builder, &Instruction) -> S,
-        Cond: FnOnce(&Builder, &Value) -> C,
-        F: FnOnce(&Builder, &Instruction) -> X,
+        Step: FnOnce(&Value<'a>) -> Result<S, Error>,
+        Cond: FnOnce(&Value<'a>) -> Result<C, Error>,
+        F: FnOnce(&Value<'a>) -> Result<X, Error>,
     >(
         &self,
         start: impl AsRef<Value<'a>>,
@@ -142,25 +142,31 @@ impl<'a> Builder<'a> {
         f: F,
     ) -> Result<Instruction<'a>, Error> {
         let ctx = self.context();
+
+        let start = start.as_ref();
+
         let preheader_bb = self.insertion_block()?;
         let function = preheader_bb.parent()?;
         let loop_bb = BasicBlock::append(&ctx, &function, "loop")?;
+
         self.br(&loop_bb)?;
         self.position_at_end(&loop_bb);
 
-        let var = self.phi(start.as_ref().type_of()?, "for_loop")?;
-        var.phi_add_incoming(&[(start.as_ref(), &preheader_bb)]);
+        let var = self.phi(start.type_of()?, "x")?;
+        var.phi_add_incoming(&[(start, &preheader_bb)]);
 
-        let _loop = f(self, &var);
+        let _body = f(var.as_ref());
 
-        let next = step(self, &var).into();
-        let cond = cond(self, &next).into();
+        let next_var = step(var.as_ref())?.into();
+
+        let cond = cond(next_var.as_ref())?.into();
+
         let loop_end_bb = self.insertion_block()?;
         let after_bb = BasicBlock::append(&ctx, &function, "after")?;
         self.cond_br(cond, &loop_bb, &after_bb)?;
         self.position_at_end(&after_bb);
 
-        var.phi_add_incoming(&[(&next, &loop_end_bb)]);
+        var.phi_add_incoming(&[(&next_var, &loop_end_bb)]);
         Ok(var)
     }
 

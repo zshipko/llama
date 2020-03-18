@@ -8,6 +8,12 @@ pub type TypeKind = llvm::LLVMTypeKind;
 
 pub struct FunctionType<'a>(pub(crate) Type<'a>);
 
+impl<'a> Clone for Type<'a> {
+    fn clone(&self) -> Type<'a> {
+        Type(self.0, PhantomData)
+    }
+}
+
 impl<'a> AsRef<Type<'a>> for Type<'a> {
     fn as_ref(&self) -> &Type<'a> {
         &self

@@ -14,7 +14,7 @@ impl<'a> From<Const<'a>> for Value<'a> {
 }
 
 impl<'a> Const<'a> {
-    const_func!(int(t: impl AsRef<&'a Type<'a>>, i: i64, sign_extend: bool) {
+    const_func!(int(t: impl AsRef<Type<'a>>, i: i64, sign_extend: bool) {
         llvm::core::LLVMConstInt(
             t.as_ref().llvm_inner(),
             i as u64,
@@ -23,7 +23,7 @@ impl<'a> Const<'a> {
     });
 
     const_func!(int_s(
-        t: impl AsRef<&'a Type<'a>>,
+        t: impl AsRef<Type<'a>>,
         i: impl AsRef<str>,
         radix: u8,
     ) {
@@ -35,12 +35,12 @@ impl<'a> Const<'a> {
         )
     });
 
-    const_func!(real(t: impl AsRef<&'a Type<'a>>, i: f64) {
+    const_func!(real(t: impl AsRef<Type<'a>>, i: f64) {
         llvm::core::LLVMConstReal(t.as_ref().llvm_inner(), i as f64)
     });
 
     const_func!(real_s(
-        t: impl AsRef<&'a Type<'a>>,
+        t: impl AsRef<Type<'a>>,
         i: impl AsRef<str>,
     ) {
         let s = cstr!(i.as_ref());
@@ -50,19 +50,19 @@ impl<'a> Const<'a> {
         )
     });
 
-    const_func!(undef(t: impl AsRef<&'a Type<'a>>)  {
+    const_func!(undef(t: impl AsRef<Type<'a>>)  {
         llvm::core::LLVMGetUndef(t.as_ref().llvm_inner())
     });
 
-    const_func!(pointer_null(t: impl AsRef<&'a Type<'a>>){
+    const_func!(pointer_null(t: impl AsRef<Type<'a>>){
         llvm::core::LLVMConstPointerNull(t.as_ref().llvm_inner())
     });
 
-    const_func!(null(t: impl AsRef<&'a Type<'a>>){
+    const_func!(null(t: impl AsRef<Type<'a>>){
         llvm::core::LLVMConstNull(t.as_ref().llvm_inner())
     });
 
-    const_func!(all_ones(t: impl AsRef<&'a Type<'a>>){
+    const_func!(all_ones(t: impl AsRef<Type<'a>>){
         llvm::core::LLVMConstAllOnes(t.as_ref().llvm_inner())
     });
 
@@ -569,7 +569,7 @@ impl<'a> Const<'a> {
         }
     }
 
-    pub fn trunc(&self, t: impl AsRef<&'a Type<'a>>) -> Result<Const<'a>, Error> {
+    pub fn trunc(&self, t: impl AsRef<Type<'a>>) -> Result<Const<'a>, Error> {
         unsafe {
             Value::from_inner(llvm::core::LLVMConstTrunc(
                 self.as_ref().llvm_inner(),
@@ -579,7 +579,7 @@ impl<'a> Const<'a> {
         }
     }
 
-    pub fn sext(&self, t: impl AsRef<&'a Type<'a>>) -> Result<Const<'a>, Error> {
+    pub fn sext(&self, t: impl AsRef<Type<'a>>) -> Result<Const<'a>, Error> {
         unsafe {
             Value::from_inner(llvm::core::LLVMConstSExt(
                 self.as_ref().llvm_inner(),
@@ -589,7 +589,7 @@ impl<'a> Const<'a> {
         }
     }
 
-    pub fn zext(&self, t: impl AsRef<&'a Type<'a>>) -> Result<Const<'a>, Error> {
+    pub fn zext(&self, t: impl AsRef<Type<'a>>) -> Result<Const<'a>, Error> {
         unsafe {
             Value::from_inner(llvm::core::LLVMConstZExt(
                 self.as_ref().llvm_inner(),
@@ -599,7 +599,7 @@ impl<'a> Const<'a> {
         }
     }
 
-    pub fn fp_trunc(&self, t: impl AsRef<&'a Type<'a>>) -> Result<Const<'a>, Error> {
+    pub fn fp_trunc(&self, t: impl AsRef<Type<'a>>) -> Result<Const<'a>, Error> {
         unsafe {
             Value::from_inner(llvm::core::LLVMConstFPTrunc(
                 self.as_ref().llvm_inner(),
@@ -609,7 +609,7 @@ impl<'a> Const<'a> {
         }
     }
 
-    pub fn fp_ext(&self, t: impl AsRef<&'a Type<'a>>) -> Result<Const<'a>, Error> {
+    pub fn fp_ext(&self, t: impl AsRef<Type<'a>>) -> Result<Const<'a>, Error> {
         unsafe {
             Value::from_inner(llvm::core::LLVMConstFPExt(
                 self.as_ref().llvm_inner(),

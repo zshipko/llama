@@ -19,9 +19,11 @@ impl<'a> Drop for Context<'a> {
     }
 }
 
+static INIT: std::sync::Once = std::sync::Once::new();
+
 impl<'a> Context<'a> {
     fn init() {
-        unsafe {
+        INIT.call_once(|| unsafe {
             llvm::target::LLVM_InitializeNativeTarget();
             llvm::target::LLVM_InitializeNativeAsmPrinter();
             llvm::target::LLVM_InitializeNativeAsmParser();
@@ -41,7 +43,7 @@ impl<'a> Context<'a> {
             llvm::target::LLVMInitializeX86Target();
             llvm::target::LLVMInitializeX86AsmPrinter();
             llvm::target::LLVMInitializeX86AsmParser();
-        }
+        });
     }
 
     /// Create a new context

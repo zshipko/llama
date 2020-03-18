@@ -133,3 +133,145 @@ impl<'a> TargetData<'a> {
         }
     }
 }
+
+pub struct Target(llvm::target_machine::LLVMTargetRef);
+
+impl<'a> Target {
+    pub fn new(s: impl AsRef<str>) -> Result<Target, Error> {
+        let s = cstr!(s.as_ref());
+        unsafe {
+            let ptr = llvm::target_machine::LLVMGetTargetFromName(s.as_ptr());
+            if ptr.is_null() {
+                return Err(Error::NullPointer);
+            }
+            Ok(Target(ptr))
+        }
+    }
+
+    pub fn default() -> Result<Target, Error> {
+        Target::new(default_target_triple())
+    }
+
+    pub fn host_cpu_name() -> Message {
+        unsafe { Message::from_raw(llvm::target_machine::LLVMGetHostCPUName()) }
+    }
+
+    pub fn host_cpu_features() -> Message {
+        unsafe { Message::from_raw(llvm::target_machine::LLVMGetHostCPUFeatures()) }
+    }
+
+    pub fn first() -> Result<Target, Error> {
+        unsafe {
+            let ptr = llvm::target_machine::LLVMGetFirstTarget();
+            if ptr.is_null() {
+                return Err(Error::NullPointer);
+            }
+            Ok(Target(ptr))
+        }
+    }
+
+    pub fn next_target(&self) -> Result<Target, Error> {
+        unsafe {
+            let ptr = llvm::target_machine::LLVMGetNextTarget(self.0);
+            if ptr.is_null() {
+                return Err(Error::NullPointer);
+            }
+            Ok(Target(ptr))
+        }
+    }
+
+    pub fn name(&self) -> Result<&str, Error> {
+        unsafe {
+            let s = llvm::target_machine::LLVMGetTargetName(self.0);
+            let s = std::slice::from_raw_parts(s as *const u8, strlen(s));
+            let s = std::str::from_utf8(s)?;
+            Ok(s)
+        }
+    }
+
+    pub fn has_jit(&self) -> bool {
+        unsafe { llvm::target_machine::LLVMTargetHasJIT(self.0) == 1 }
+    }
+
+    pub fn has_asm_backend(&self) -> bool {
+        unsafe { llvm::target_machine::LLVMTargetHasAsmBackend(self.0) == 1 }
+    }
+}
+
+pub struct TargetMachine<'a>(
+    NonNull<llvm::target_machine::LLVMOpaqueTargetMachine>,
+    PhantomData<&'a ()>,
+);
+
+llvm_inner_impl!(
+    TargetMachine<'a>,
+    llvm::target_machine::LLVMOpaqueTargetMachine
+);
+
+impl<'a> Drop for TargetMachine<'a> {
+    fn drop(&mut self) {
+        unsafe { llvm::target_machine::LLVMDisposeTargetMachine(self.llvm_inner()) }
+    }
+}
+
+impl<'a> TargetMachine<'a> {
+    pub fn new(
+        target: &Target,
+        triple: impl AsRef<str>,
+        cpu: impl AsRef<str>,
+        features: impl AsRef<str>,
+        opt_level: CodeGenOptLevel,
+        reloc: RelocMode,
+        code_model: CodeModel,
+    ) -> Result<TargetMachine<'a>, Error> {
+        let triple = cstr!(triple.as_ref());
+        let cpu = cstr!(cpu.as_ref());
+        let features = cstr!(features.as_ref());
+        unsafe {
+            Ok(TargetMachine(
+                wrap_inner(llvm::target_machine::LLVMCreateTargetMachine(
+                    target.0,
+                    triple.as_ptr(),
+                    cpu.as_ptr(),
+                    features.as_ptr(),
+                    opt_level,
+                    reloc,
+                    code_model,
+                ))?,
+                PhantomData,
+            ))
+        }
+    }
+
+    pub fn triple(&self) -> Message {
+        unsafe {
+            Message::from_raw(llvm::target_machine::LLVMGetTargetMachineTriple(
+                self.llvm_inner(),
+            ))
+        }
+    }
+
+    pub fn cpu(&self) -> Message {
+        unsafe {
+            Message::from_raw(llvm::target_machine::LLVMGetTargetMachineCPU(
+                self.llvm_inner(),
+            ))
+        }
+    }
+
+    pub fn features(&self) -> Message {
+        unsafe {
+            Message::from_raw(llvm::target_machine::LLVMGetTargetMachineFeatureString(
+                self.llvm_inner(),
+            ))
+        }
+    }
+
+    pub fn data_layout(&self) -> Result<TargetData<'a>, Error> {
+        unsafe {
+            TargetData::from_inner(llvm::target_machine::LLVMCreateTargetDataLayout(
+                self.llvm_inner(),
+            ))
+        }
+    }
+}

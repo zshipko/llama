@@ -78,12 +78,17 @@ pub use crate::pass_manager::{
     transforms, FunctionPassManager, ModulePassManager, PassManager, Transform,
 };
 pub use crate::r#const::Const;
-pub use crate::target::TargetData;
+pub use crate::target::{Target, TargetData, TargetMachine};
 pub use crate::typ::{FunctionType, StructType, Type, TypeKind};
 pub use crate::value::{AttributeIndex, Function, Value, ValueKind};
 
 pub use llvm::{
-    object::LLVMBinaryType as BinaryType, target::LLVMByteOrdering as ByteOrder,
+    object::LLVMBinaryType as BinaryType,
+    target::LLVMByteOrdering as ByteOrder,
+    target_machine::{
+        LLVMCodeGenOptLevel as CodeGenOptLevel, LLVMCodeModel as CodeModel,
+        LLVMRelocMode as RelocMode,
+    },
     LLVMAtomicOrdering as AtomicOrdering, LLVMAtomicRMWBinOp as AtomicRMWBinOp,
     LLVMCallConv as CallConv, LLVMDiagnosticSeverity as DiagnosticSeverity,
     LLVMInlineAsmDialect as InlineAsmDialect, LLVMIntPredicate as ICmp, LLVMLinkage as Linkage,
@@ -259,7 +264,7 @@ pub fn add_symbol<T>(filename: impl AsRef<str>, x: &mut T) {
     unsafe { llvm::support::LLVMAddSymbol(filename.as_ptr(), x as *mut T as *mut c_void) }
 }
 
-pub fn default_target() -> &'static str {
+pub fn default_target_triple() -> &'static str {
     unsafe {
         let ptr = llvm::target_machine::LLVMGetDefaultTargetTriple();
         let slice = std::slice::from_raw_parts(ptr as *const u8, strlen(ptr));

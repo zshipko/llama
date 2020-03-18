@@ -99,6 +99,44 @@ impl<'a> Value<'a> {
         }
     }
 
+    pub fn delete_global(self) {
+        unsafe { llvm::core::LLVMDeleteGlobal(self.llvm_inner()) }
+    }
+
+    pub fn initializer(&self) -> Result<Value<'a>, Error> {
+        unsafe { Value::from_inner(llvm::core::LLVMGetInitializer(self.llvm_inner())) }
+    }
+
+    pub fn set_initializer(&mut self, val: &Const<'a>) {
+        unsafe { llvm::core::LLVMSetInitializer(self.llvm_inner(), val.as_ref().llvm_inner()) }
+    }
+
+    pub fn is_global_constant(&self) -> bool {
+        unsafe { llvm::core::LLVMIsGlobalConstant(self.llvm_inner()) == 1 }
+    }
+
+    pub fn set_global_constant(&mut self, b: bool) {
+        unsafe { llvm::core::LLVMSetGlobalConstant(self.llvm_inner(), if b { 1 } else { 0 }) }
+    }
+
+    pub fn is_extern(&self) -> bool {
+        unsafe { llvm::core::LLVMIsExternallyInitialized(self.llvm_inner()) == 1 }
+    }
+
+    pub fn set_extern(&mut self, b: bool) {
+        unsafe {
+            llvm::core::LLVMSetExternallyInitialized(self.llvm_inner(), if b { 1 } else { 0 })
+        }
+    }
+
+    pub fn is_thread_local(&self) -> bool {
+        unsafe { llvm::core::LLVMIsThreadLocal(self.llvm_inner()) == 1 }
+    }
+
+    pub fn set_thread_local(&mut self, b: bool) {
+        unsafe { llvm::core::LLVMSetThreadLocal(self.llvm_inner(), if b { 1 } else { 0 }) }
+    }
+
     pub fn is_const(&self) -> bool {
         unsafe { llvm::core::LLVMIsConstant(self.llvm_inner()) == 1 }
     }
@@ -290,6 +328,29 @@ impl<'a> Function<'a> {
                 self.as_ref().llvm_inner(),
                 index.get_index(),
                 attr.llvm_inner(),
+            )
+        }
+    }
+
+    pub fn remove_enum_atribute(&mut self, index: AttributeIndex, kind_id: u32) {
+        unsafe {
+            llvm::core::LLVMRemoveEnumAttributeAtIndex(
+                self.as_ref().llvm_inner(),
+                index.get_index(),
+                kind_id,
+            )
+        }
+    }
+
+    pub fn remove_string_atribute(&mut self, index: AttributeIndex, k: impl AsRef<str>) {
+        let len = k.as_ref().len();
+        let k = cstr!(k.as_ref());
+        unsafe {
+            llvm::core::LLVMRemoveStringAttributeAtIndex(
+                self.as_ref().llvm_inner(),
+                index.get_index(),
+                k.as_ptr(),
+                len as u32,
             )
         }
     }

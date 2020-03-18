@@ -98,6 +98,12 @@ impl<'a> Context<'a> {
         }
     }
 
+    pub fn enum_attribute_kind_for_name(&self, name: impl AsRef<str>) -> u32 {
+        let len = name.as_ref().len();
+        let name = cstr!(name.as_ref());
+        unsafe { llvm::core::LLVMGetEnumAttributeKindForName(name.as_ptr(), len) }
+    }
+
     // TODO: LLVMContextGetDiagnosticHandler, LLVMContextSetDiagnosticHandler,
     // LLVMContextSetYieldCallback, ...
 }

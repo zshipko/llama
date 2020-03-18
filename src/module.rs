@@ -162,10 +162,43 @@ impl<'a> Module<'a> {
         Ok(Function(Value::from_inner(value)?))
     }
 
+    pub fn add_global_in_address_space(
+        &mut self,
+        name: impl AsRef<str>,
+        t: &Type,
+        addr: usize,
+    ) -> Result<Function<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        let value = unsafe {
+            llvm::core::LLVMAddGlobalInAddressSpace(
+                self.llvm_inner(),
+                t.llvm_inner(),
+                name.as_ptr(),
+                addr as c_uint,
+            )
+        };
+        Ok(Function(Value::from_inner(value)?))
+    }
+
     pub fn named_function(&self, name: impl AsRef<str>) -> Result<Function<'a>, Error> {
         let name = cstr!(name.as_ref());
         let value = unsafe { llvm::core::LLVMGetNamedFunction(self.llvm_inner(), name.as_ptr()) };
         Ok(Function(Value::from_inner(value)?))
+    }
+
+    pub fn first_global(&self) -> Result<Value<'a>, Error> {
+        let value = unsafe { llvm::core::LLVMGetFirstGlobal(self.llvm_inner()) };
+        Value::from_inner(value)
+    }
+
+    pub fn last_global(&self) -> Result<Value<'a>, Error> {
+        let value = unsafe { llvm::core::LLVMGetLastGlobal(self.llvm_inner()) };
+        Value::from_inner(value)
+    }
+
+    pub fn next_global(&self, global: impl AsRef<Value<'a>>) -> Result<Value<'a>, Error> {
+        let value = unsafe { llvm::core::LLVMGetNextGlobal(global.as_ref().llvm_inner()) };
+        Value::from_inner(value)
     }
 
     pub fn first_function(&self) -> Result<Function<'a>, Error> {

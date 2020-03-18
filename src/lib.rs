@@ -254,6 +254,14 @@ pub fn add_symbol<T>(filename: impl AsRef<str>, x: &mut T) {
     unsafe { llvm::support::LLVMAddSymbol(filename.as_ptr(), x as *mut T as *mut c_void) }
 }
 
+pub fn default_target() -> &'static str {
+    unsafe {
+        let ptr = llvm::target_machine::LLVMGetDefaultTargetTriple();
+        let slice = std::slice::from_raw_parts(ptr as *const u8, strlen(ptr));
+        std::str::from_utf8_unchecked(slice)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::*;
@@ -261,7 +269,7 @@ mod tests {
     #[test]
     fn codegen() -> Result<(), Error> {
         let context = Context::new()?;
-        let mut module = Module::new(&context, "test")?;
+        let mut module = Module::new(&context, "test_codegen")?;
 
         let builder = Builder::new(&context)?;
 
@@ -289,7 +297,7 @@ mod tests {
     #[test]
     fn if_then_else() -> Result<(), Error> {
         let ctx = Context::new()?;
-        let mut module = Module::new(&ctx, "test")?;
+        let mut module = Module::new(&ctx, "test_if_then_else")?;
         let builder = Builder::new(&ctx)?;
 
         let f32 = Type::float(&ctx)?;
@@ -325,16 +333,8 @@ mod tests {
     #[test]
     fn for_loop() -> Result<(), Error> {
         let ctx = Context::new()?;
-        let mut module = Module::new(&ctx, "test")?;
+        let mut module = Module::new(&ctx, "test_for_loop")?;
         let builder = Builder::new(&ctx)?;
-
-        let i32 = Type::int(&ctx, 32)?;
-        let i64 = Type::int(&ctx, 64)?;
-        let i8 = Type::int(&ctx, 8)?;
-
-        let i8ptr = i8.pointer(None)?;
-        let printf_t = FunctionType::new(&i32, &[&i8ptr, &i64], false)?;
-        let printf = module.add_function("printf", &printf_t)?;
 
         let i64 = Type::int(&ctx, 64)?;
         let ft = FunctionType::new(&i64, &[&i64], false)?;
@@ -342,12 +342,11 @@ mod tests {
         builder.define_function(&f, |builder, _| {
             let params = f.params();
             let one = Const::int(&i64, 1, true)?;
-            let fmt = builder.global_string_ptr("%ld\n", "fmt")?;
             let f = builder.for_loop(
                 Const::int(&i64, 0, true)?,
                 |x| builder.add(x, one, "add"),
                 |x| builder.icmp(ICmp::LLVMIntSLT, x, &params[0], "cond"),
-                |x| builder.call(&printf, &[fmt.as_ref(), x], "print"),
+                |_| Const::int(&i64, 0, true),
             )?;
             builder.ret(f)
         })?;

@@ -18,4 +18,6 @@ pub enum Error {
     InvalidBasicBlock,
     #[error("Invalid function")]
     InvalidFunction,
+    #[error("Poison error: {0}")]
+    Poison(#[from] std::sync::PoisonError<std::sync::MutexGuard<'static, ()>>),
 }

@@ -293,6 +293,9 @@ mod tests {
 
         let x: i32 = unsafe { testing(1i32, 2i32) };
         assert_eq!(x, 3);
+
+        Codegen::new(&module, &["testing"])?;
+
         Ok(())
     }
 
@@ -321,13 +324,17 @@ mod tests {
 
         println!("{}", module);
 
-        let engine = ExecutionEngine::new(&module)?;
-        let testing: unsafe extern "C" fn(f32) -> f32 = engine.function("testing")?;
-        let x = unsafe { testing(11.0) };
-        let y = unsafe { testing(9.0) };
+        {
+            let engine = ExecutionEngine::new(&module)?;
+            let testing: unsafe extern "C" fn(f32) -> f32 = engine.function("testing")?;
+            let x = unsafe { testing(11.0) };
+            let y = unsafe { testing(9.0) };
 
-        assert_eq!(x, 2.0);
-        assert_eq!(y, 1.0);
+            assert_eq!(x, 2.0);
+            assert_eq!(y, 1.0);
+        }
+
+        Codegen::new(&module, &["testing"])?;
 
         Ok(())
     }
@@ -355,15 +362,19 @@ mod tests {
 
         println!("{}", module);
 
-        let engine = ExecutionEngine::new(&module)?;
-        let testing: unsafe extern "C" fn(i64) -> i64 = engine.function("testing")?;
-        let x = unsafe { testing(10) };
+        {
+            let engine = ExecutionEngine::new(&module)?;
+            let testing: unsafe extern "C" fn(i64) -> i64 = engine.function("testing")?;
+            let x = unsafe { testing(10) };
 
-        println!("{}", x);
-        assert_eq!(x, 9);
+            println!("{}", x);
+            assert_eq!(x, 9);
 
-        let x = unsafe { testing(100) };
-        assert_eq!(x, 99);
+            let x = unsafe { testing(100) };
+            assert_eq!(x, 99);
+        }
+
+        Codegen::new(&module, &["testing"])?;
 
         Ok(())
     }

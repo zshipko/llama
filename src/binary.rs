@@ -1,18 +1,18 @@
 use crate::*;
 
-pub struct Binary<'a>(NonNull<llvm::object::LLVMOpaqueBinary>, PhantomData<&'a ()>);
+pub struct Binary(NonNull<llvm::object::LLVMOpaqueBinary>, MemoryBuffer);
 
-llvm_inner_impl!(Binary<'a>, llvm::object::LLVMOpaqueBinary);
+llvm_inner_impl!(Binary, llvm::object::LLVMOpaqueBinary);
 
-impl<'a> Drop for Binary<'a> {
+impl<'a> Drop for Binary {
     fn drop(&mut self) {
         unsafe { llvm::object::LLVMDisposeBinary(self.llvm_inner()) }
     }
 }
 
-impl<'a> Binary<'a> {
+impl<'a> Binary {
     /// Create a new binary object
-    pub fn new(ctx: &Context, data: &MemoryBuffer) -> Result<Binary<'a>, Error> {
+    pub fn new(ctx: &Context, data: MemoryBuffer) -> Result<Binary, Error> {
         let mut message = std::ptr::null_mut();
         let bin = unsafe {
             llvm::object::LLVMCreateBinary(data.llvm_inner(), ctx.llvm_inner(), &mut message)
@@ -21,7 +21,7 @@ impl<'a> Binary<'a> {
         let message = Message::from_raw(message);
 
         match wrap_inner(bin) {
-            Ok(bin) => Ok(Binary(bin, PhantomData)),
+            Ok(bin) => Ok(Binary(bin, data)),
             Err(_) => Err(Error::Message(message)),
         }
     }
@@ -39,7 +39,7 @@ impl<'a> Binary<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for Binary<'a> {
+impl<'a> AsRef<[u8]> for Binary {
     fn as_ref(&self) -> &[u8] {
         let buffer = unsafe { llvm::object::LLVMBinaryCopyMemoryBuffer(self.llvm_inner()) };
         let buf = MemoryBuffer::from_raw(buffer).unwrap();

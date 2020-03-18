@@ -1,49 +1,65 @@
 use crate::*;
 
-use std::collections::BTreeSet;
+use std::sync::Mutex;
 
-pub struct Codegen(
-    NonNull<llvm::lto::LLVMOpaqueLTOCodeGenerator>,
-    Vec<llvm::lto::lto_module_t>,
-    BTreeSet<String>,
-);
+pub struct Codegen(Vec<u8>, Vec<String>, Binary);
 
-llvm_inner_impl!(Codegen, llvm::lto::LLVMOpaqueLTOCodeGenerator);
-
-impl Drop for Codegen {
-    fn drop(&mut self) {
-        self.1
-            .iter()
-            .for_each(|x| unsafe { llvm::lto::lto_module_dispose(*x) });
-        unsafe { llvm::lto::lto_codegen_dispose(self.0.as_ptr()) }
+impl AsRef<[u8]> for Codegen {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
     }
 }
 
-impl Codegen {
-    pub fn new() -> Result<Codegen, Error> {
-        let lto = unsafe { wrap_inner(llvm::lto::lto_codegen_create())? };
-        Ok(Codegen(lto, Vec::new(), BTreeSet::new()))
+impl From<Codegen> for Vec<u8> {
+    fn from(x: Codegen) -> Vec<u8> {
+        x.0
     }
+}
 
-    pub fn add_module(&mut self, module: &Module) -> Result<(), Error> {
+lazy_static::lazy_static! {
+    static ref MUTEX: Mutex<()> = Mutex::new(());
+}
+
+impl Codegen {
+    pub fn new<'a>(module: &Module, symbols: impl AsRef<[&'a str]>) -> Result<Codegen, Error> {
+        let _handle = MUTEX.lock()?;
+
+        let lto = unsafe { wrap_inner(llvm::lto::lto_codegen_create_in_local_context())? };
+
         let s = module.write_bitcode_to_memory_buffer()?;
         let context = module.context()?;
-        let bin = Binary::new(&context, &s)?;
+        let bin = Binary::new(&context, s)?;
 
+        let mut cg = Codegen(Vec::new(), Vec::new(), bin);
+
+        for sym in symbols.as_ref() {
+            cg.preserve_symbol(lto.as_ptr(), sym)
+        }
+
+        cg.add_module(lto.as_ptr(), module)?;
+
+        cg.0 = cg.compile(lto.as_ptr())?;
+        unsafe { llvm::lto::lto_codegen_dispose(lto.as_ptr()) }
+        Ok(cg)
+    }
+
+    fn add_module(&mut self, lto: llvm::lto::lto_code_gen_t, module: &Module) -> Result<(), Error> {
         if let Ok(func) = module.first_function() {
             let mut func = func;
-            self.2.insert(func.as_ref().name()?.to_string());
+            self.1.push(func.as_ref().name()?.to_string());
 
             while let Ok(f) = func.next_function() {
-                self.2.insert(f.as_ref().name()?.to_string());
+                self.1.push(f.as_ref().name()?.to_string());
                 func = f;
             }
         }
 
         let module = unsafe {
-            llvm::lto::lto_module_create_from_memory(
-                bin.as_ref().as_ptr() as *mut c_void,
-                bin.as_ref().len(),
+            llvm::lto::lto_module_create_in_codegen_context(
+                self.2.as_ref().as_ptr() as *mut c_void,
+                self.2.as_ref().len(),
+                std::ptr::null(),
+                lto,
             )
         };
 
@@ -52,44 +68,40 @@ impl Codegen {
             return Err(Error::Message(Message(msg)));
         }
 
-        let r = unsafe { llvm::lto::lto_codegen_add_module(self.llvm_inner(), module) == 0 };
-        if !r {
-            let msg = unsafe { llvm::core::LLVMCreateMessage(llvm::lto::lto_get_error_message()) };
-            return Err(Error::Message(Message(msg)));
-        }
+        unsafe { llvm::lto::lto_codegen_set_module(lto, module) };
         Ok(())
     }
 
-    pub fn compile(&self) -> Result<&[u8], Error> {
+    /*fn compile(&self, lto: llvm::lto::lto_code_gen_t) -> Result<Vec<u8>, Error> {
         let mut len = 0;
-        let ptr = unsafe { llvm::lto::lto_codegen_compile(self.llvm_inner(), &mut len) };
+        let ptr = unsafe { llvm::lto::lto_codegen_compile(lto, &mut len) };
 
         if ptr.is_null() {
             let msg = unsafe { llvm::core::LLVMCreateMessage(llvm::lto::lto_get_error_message()) };
             return Err(Error::Message(Message(msg)));
         }
 
-        unsafe { Ok(std::slice::from_raw_parts(ptr as *const u8, len)) }
-    }
+        unsafe { Ok(std::slice::from_raw_parts(ptr as *const u8, len).into()) }
+    }*/
 
-    pub fn compile_optimized(&self) -> Result<&[u8], Error> {
+    fn compile(&self, lto: llvm::lto::lto_code_gen_t) -> Result<Vec<u8>, Error> {
         let mut len = 0;
-        let ptr = unsafe { llvm::lto::lto_codegen_compile_optimized(self.llvm_inner(), &mut len) };
+        let ptr = unsafe { llvm::lto::lto_codegen_compile_optimized(lto, &mut len) };
 
         if ptr.is_null() {
             let msg = unsafe { llvm::core::LLVMCreateMessage(llvm::lto::lto_get_error_message()) };
             return Err(Error::Message(Message(msg)));
         }
 
-        unsafe { Ok(std::slice::from_raw_parts(ptr as *const u8, len)) }
+        unsafe { Ok(std::slice::from_raw_parts(ptr as *const u8, len).into()) }
     }
 
-    pub fn preserve_symbol(&self, name: impl AsRef<str>) {
+    fn preserve_symbol(&self, lto: llvm::lto::lto_code_gen_t, name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
-        unsafe { llvm::lto::lto_codegen_add_must_preserve_symbol(self.llvm_inner(), name.as_ptr()) }
+        unsafe { llvm::lto::lto_codegen_add_must_preserve_symbol(lto, name.as_ptr()) }
     }
 
-    pub fn symbols(&self) -> &BTreeSet<String> {
-        &self.2
+    pub fn symbols(&self) -> &Vec<String> {
+        &self.1
     }
 }

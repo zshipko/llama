@@ -12,7 +12,7 @@ pub enum Error {
     Llama(#[from] llama::Error),
 
     #[error("Lightbeam")]
-    Lightbeam,
+    Lightbeam(String),
 }
 
 pub use lightbeam::ExecutableModule as Exec;
@@ -35,32 +35,21 @@ impl<'a> Wasm<'a> {
 
         let mut func_map = BTreeMap::new();
 
-        let mut codegen = llama::Codegen::new()?;
-        codegen.add_module(&module).unwrap();
-
-        let mut index = 0;
         let exports = exports.as_ref();
 
-        for sym in exports.iter() {
-            codegen.preserve_symbol(sym);
-        }
+        let codegen = llama::Codegen::new(&module, exports)?;
 
-        let bin = codegen.compile()?;
-
+        let mut index = 0;
         let symbols = codegen.symbols();
         for sym in symbols {
-            println!("SYM: {}", sym);
             if exports.contains(&sym.as_str()) {
-                println!("EXPORT: {}", sym);
                 func_map.insert(sym.clone(), index);
-                index += 1;
             }
+            index += 1;
         }
 
-        let mut f = std::fs::File::create("test.wasm").unwrap();
-        std::io::Write::write_all(&mut f, bin).unwrap();
-
-        let exec = lightbeam::translate(bin).map_err(|_| Error::Lightbeam)?;
+        let exec = lightbeam::translate(codegen.as_ref())
+            .map_err(|x| Error::Lightbeam(format!("{:?}", x)))?;
         Ok(Wasm {
             module,
             codegen,
@@ -81,7 +70,7 @@ impl<'a> Wasm<'a> {
 #[macro_export]
 macro_rules! call {
     ($wasm:ident.$name:ident($($arg:expr),*$(,)?)) => {
-        $wasm.exec().execute_func($wasm.index(stringify!($name)).expect("Invalid function"), ($($arg),*))
+        $wasm.exec().execute_func($wasm.index(stringify!($name)).expect("Invalid function"), ($($arg,)*)).map_err(|x| $crate::Error::Lightbeam(format!("{:?}", x)))
     };
 }
 
@@ -90,41 +79,38 @@ mod tests {
     use crate::*;
 
     #[test]
-    fn codegen() {
-        let context = llama::Context::new().unwrap();
-        let mut module = llama::Module::new(&context, "test").unwrap();
-        module.set_target("wasm32-unknown-wasi");
+    fn codegen() -> Result<(), Error> {
+        let context = llama::Context::new()?;
+        let mut module = llama::Module::new(&context, "test")?;
+        module.set_target("wasm32");
 
-        let builder = llama::Builder::new(&context).unwrap();
+        let builder = llama::Builder::new(&context)?;
 
-        let i32 = llama::Type::int(&context, 32).unwrap();
+        let i32 = llama::Type::int(&context, 32)?;
 
-        let ft = llama::FunctionType::new(&i32, &[&i32, &i32], false).unwrap();
-        let f = module.add_function("testing_sub", &ft).unwrap();
-        builder
-            .define_function(&f, |builder, _| {
-                let params = f.params();
-                let a = builder.sub(&params[0], &params[1], "a")?;
-                builder.ret(&a)
-            })
-            .unwrap();
+        let ft = llama::FunctionType::new(&i32, &[&i32, &i32], false)?;
+        let f = module.add_function("testing_sub", &ft)?;
+        builder.define_function(&f, |builder, _| {
+            let params = f.params();
+            let a = builder.sub(&params[0], &params[1], "a")?;
+            builder.ret(&a)
+        })?;
 
-        let ft = llama::FunctionType::new(&i32, &[&i32, &i32], false).unwrap();
-        let f = module.add_function("testing", &ft).unwrap();
-        builder
-            .define_function(&f, |builder, _| {
-                let params = f.params();
-                let a = builder.add(&params[0], &params[1], "a")?;
-                builder.ret(&a)
-            })
-            .unwrap();
+        let ft = llama::FunctionType::new(&i32, &[&i32, &i32], false)?;
+        let f = module.add_function("testing", &ft)?;
+        builder.define_function(&f, |builder, _| {
+            let params = f.params();
+            let a = builder.add(&params[0], &params[1], "a")?;
+            builder.ret(&a)
+        })?;
 
         println!("{}", module);
 
-        let wasm = Wasm::new(&module, &["testing"]).unwrap();
+        let wasm = Wasm::new(&module, &["testing"])?;
         println!("{:?}", wasm.func_map);
 
-        let x: i32 = call!(wasm.testing(1i32, 2i32)).unwrap();
-        assert_eq!(x, 3)
+        let x: i32 = call!(wasm.testing(1i32, 2i32))?;
+        assert_eq!(x, 3);
+        Ok(())
     }
 }

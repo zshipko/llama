@@ -21,14 +21,18 @@ lazy_static::lazy_static! {
 }
 
 impl Codegen {
-    pub fn new<'a>(module: &Module, symbols: impl AsRef<[&'a str]>) -> Result<Codegen, Error> {
+    pub fn new<'a>(
+        module: &Module,
+        symbols: impl AsRef<[&'a str]>,
+        opt: bool,
+    ) -> Result<Codegen, Error> {
         let _handle = MUTEX.lock()?;
 
         let lto = unsafe { wrap_inner(llvm::lto::lto_codegen_create_in_local_context())? };
 
         let s = module.write_bitcode_to_memory_buffer()?;
         let context = module.context()?;
-        let bin = Binary::new(&context, s)?;
+        let bin = Binary::new(&context, &s)?;
 
         let mut cg = Codegen(Vec::new(), Vec::new(), bin);
 
@@ -38,7 +42,11 @@ impl Codegen {
 
         cg.add_module(lto.as_ptr(), module)?;
 
-        cg.0 = cg.compile(lto.as_ptr())?;
+        cg.0 = if opt {
+            cg.compile_optimized(lto.as_ptr())?
+        } else {
+            cg.compile(lto.as_ptr())?
+        };
         unsafe { llvm::lto::lto_codegen_dispose(lto.as_ptr()) }
         Ok(cg)
     }
@@ -72,7 +80,7 @@ impl Codegen {
         Ok(())
     }
 
-    /*fn compile(&self, lto: llvm::lto::lto_code_gen_t) -> Result<Vec<u8>, Error> {
+    fn compile(&self, lto: llvm::lto::lto_code_gen_t) -> Result<Vec<u8>, Error> {
         let mut len = 0;
         let ptr = unsafe { llvm::lto::lto_codegen_compile(lto, &mut len) };
 
@@ -82,9 +90,9 @@ impl Codegen {
         }
 
         unsafe { Ok(std::slice::from_raw_parts(ptr as *const u8, len).into()) }
-    }*/
+    }
 
-    fn compile(&self, lto: llvm::lto::lto_code_gen_t) -> Result<Vec<u8>, Error> {
+    fn compile_optimized(&self, lto: llvm::lto::lto_code_gen_t) -> Result<Vec<u8>, Error> {
         let mut len = 0;
         let ptr = unsafe { llvm::lto::lto_codegen_compile_optimized(lto, &mut len) };
 

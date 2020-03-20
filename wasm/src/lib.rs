@@ -37,7 +37,7 @@ impl<'a> Wasm<'a> {
 
         let exports = exports.as_ref();
 
-        let codegen = llama::Codegen::new(&module, exports)?;
+        let codegen = llama::Codegen::new(&module, exports, true)?;
 
         let mut index = 0;
         let symbols = codegen.symbols();

@@ -195,7 +195,7 @@ impl MemoryBuffer {
                 path.as_ptr(),
                 &mut mem,
                 &mut message,
-            ) == 1
+            ) == 0
         };
 
         let message = Message::from_raw(message);
@@ -302,7 +302,7 @@ mod tests {
         let x: i32 = unsafe { testing(1i32, 2i32) };
         assert_eq!(x, 3);
 
-        Codegen::new(&module, &["testing"])?;
+        Codegen::new(&module, &["testing"], true)?;
 
         Ok(())
     }
@@ -342,7 +342,7 @@ mod tests {
             assert_eq!(y, 1.0);
         }
 
-        Codegen::new(&module, &["testing"])?;
+        Codegen::new(&module, &["testing"], false)?;
 
         Ok(())
     }
@@ -382,7 +382,7 @@ mod tests {
             assert_eq!(x, 99);
         }
 
-        Codegen::new(&module, &["testing"])?;
+        Codegen::new(&module, &["testing"], true)?;
 
         Ok(())
     }

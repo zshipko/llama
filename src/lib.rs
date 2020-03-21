@@ -35,7 +35,6 @@ macro_rules! instr {
     }
 }
 
-
 extern "C" {
     fn strlen(_: *const std::os::raw::c_char) -> usize;
 }

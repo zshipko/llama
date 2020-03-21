@@ -69,7 +69,6 @@ impl<'a> Builder<'a> {
         unsafe { BasicBlock::from_inner(llvm::core::LLVMGetInsertBlock(self.llvm())) }
     }
 
-
     pub fn define_function<
         T: Into<Value<'a>>,
         F: FnOnce(&Self, BasicBlock<'a>) -> Result<T, Error>,
@@ -449,7 +448,7 @@ impl<'a> Builder<'a> {
         )
     });
 
-    instr!(in_struct_gep(&self, ptr: impl AsRef<Value<'a>>, index: usize, name: impl AsRef<str>) {
+    instr!(struct_gep(&self, ptr: impl AsRef<Value<'a>>, index: usize, name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
         llvm::core::LLVMBuildStructGEP(
             self.llvm(),
@@ -501,7 +500,7 @@ impl<'a> Builder<'a> {
         )
     });
 
-    instr!(in_struct_gep2(
+    instr!(struct_gep2(
         &self,
         ty: impl AsRef<Type<'a>>,
         ptr: impl AsRef<Value<'a>>,

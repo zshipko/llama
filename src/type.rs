@@ -55,12 +55,7 @@ impl<'a> Type<'a> {
 
     pub fn by_name(module: &Module, name: impl AsRef<str>) -> Result<Type<'a>, Error> {
         let name = cstr!(name.as_ref());
-        unsafe {
-            Self::from_inner(llvm::core::LLVMGetTypeByName(
-                module.llvm(),
-                name.as_ptr(),
-            ))
-        }
+        unsafe { Self::from_inner(llvm::core::LLVMGetTypeByName(module.llvm(), name.as_ptr())) }
     }
 
     pub fn int_width(&self) -> usize {
@@ -169,30 +164,15 @@ impl<'a> Type<'a> {
 
     pub fn pointer(&self, address_space: Option<usize>) -> Result<Type<'a>, Error> {
         let address_space = address_space.unwrap_or(0) as c_uint;
-        unsafe {
-            Self::from_inner(llvm::core::LLVMPointerType(
-                self.llvm(),
-                address_space,
-            ))
-        }
+        unsafe { Self::from_inner(llvm::core::LLVMPointerType(self.llvm(), address_space)) }
     }
 
     pub fn vector(&self, count: usize) -> Result<Type<'a>, Error> {
-        unsafe {
-            Self::from_inner(llvm::core::LLVMVectorType(
-                self.llvm(),
-                count as c_uint,
-            ))
-        }
+        unsafe { Self::from_inner(llvm::core::LLVMVectorType(self.llvm(), count as c_uint)) }
     }
 
     pub fn array(&self, count: usize) -> Result<Type<'a>, Error> {
-        unsafe {
-            Self::from_inner(llvm::core::LLVMArrayType(
-                self.llvm(),
-                count as c_uint,
-            ))
-        }
+        unsafe { Self::from_inner(llvm::core::LLVMArrayType(self.llvm(), count as c_uint)) }
     }
 
     pub fn kind(&self) -> TypeKind {
@@ -290,10 +270,10 @@ impl<'a> StructType<'a> {
         Type::from_inner(t)?.into_struct_type()
     }
 
-    pub fn new_named(ctx: &'a Context, name: impl AsRef<str>) -> Result<Type<'a>, Error> {
+    pub fn new_named(ctx: &'a Context, name: impl AsRef<str>) -> Result<StructType<'a>, Error> {
         let name = cstr!(name.as_ref());
         let t = unsafe { llvm::core::LLVMStructCreateNamed(ctx.llvm(), name.as_ptr()) };
-        Type::from_inner(t)
+        Type::from_inner(t)?.into_struct_type()
     }
 
     pub fn name(&self) -> Result<&str, Error> {
@@ -337,9 +317,8 @@ impl<'a> StructType<'a> {
     }
 
     pub fn field(&self, index: usize) -> Result<Type<'a>, Error> {
-        let t = unsafe {
-            llvm::core::LLVMStructGetTypeAtIndex(self.as_ref().llvm(), index as c_uint)
-        };
+        let t =
+            unsafe { llvm::core::LLVMStructGetTypeAtIndex(self.as_ref().llvm(), index as c_uint) };
 
         Type::from_inner(t)
     }

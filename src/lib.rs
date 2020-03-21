@@ -254,7 +254,7 @@ impl Drop for MemoryBuffer {
     }
 }
 
-pub fn load_library(filename: impl AsRef<std::path::PathBuf>) -> bool {
+pub fn load_library(filename: impl AsRef<std::path::Path>) -> bool {
     let filename = cstr!(filename
         .as_ref()
         .to_str()

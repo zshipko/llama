@@ -9,7 +9,7 @@ llvm_inner_impl!(TargetData<'a>, llvm::target::LLVMOpaqueTargetData);
 
 impl<'a> Drop for TargetData<'a> {
     fn drop(&mut self) {
-        unsafe { llvm::target::LLVMDisposeTargetData(self.llvm_inner()) }
+        unsafe { llvm::target::LLVMDisposeTargetData(self.llvm()) }
     }
 }
 
@@ -26,29 +26,29 @@ impl<'a> TargetData<'a> {
     }
 
     pub fn string_rep(&self) -> Message {
-        let ptr = unsafe { llvm::target::LLVMCopyStringRepOfTargetData(self.llvm_inner()) };
+        let ptr = unsafe { llvm::target::LLVMCopyStringRepOfTargetData(self.llvm()) };
         Message::from_raw(ptr)
     }
 
     pub fn byte_order(&self) -> ByteOrder {
-        unsafe { llvm::target::LLVMByteOrder(self.llvm_inner()) }
+        unsafe { llvm::target::LLVMByteOrder(self.llvm()) }
     }
 
     pub fn pointer_size(&self) -> usize {
-        unsafe { llvm::target::LLVMPointerSize(self.llvm_inner()) as usize }
+        unsafe { llvm::target::LLVMPointerSize(self.llvm()) as usize }
     }
 
     pub fn pointer_size_for_address_space(&self, addr_space: usize) -> usize {
         unsafe {
-            llvm::target::LLVMPointerSizeForAS(self.llvm_inner(), addr_space as c_uint) as usize
+            llvm::target::LLVMPointerSizeForAS(self.llvm(), addr_space as c_uint) as usize
         }
     }
 
     pub fn int_ptr_type(&self, ctx: &Context<'a>) -> Result<Type<'a>, Error> {
         unsafe {
             Type::from_inner(llvm::target::LLVMIntPtrTypeInContext(
-                ctx.llvm_inner(),
-                self.llvm_inner(),
+                ctx.llvm(),
+                self.llvm(),
             ))
         }
     }
@@ -60,8 +60,8 @@ impl<'a> TargetData<'a> {
     ) -> Result<Type<'a>, Error> {
         unsafe {
             Type::from_inner(llvm::target::LLVMIntPtrTypeForASInContext(
-                ctx.llvm_inner(),
-                self.llvm_inner(),
+                ctx.llvm(),
+                self.llvm(),
                 addr_space as c_uint,
             ))
         }
@@ -69,46 +69,46 @@ impl<'a> TargetData<'a> {
 
     pub fn size_of_type_in_bits(&self, t: impl AsRef<Type<'a>>) -> usize {
         unsafe {
-            llvm::target::LLVMSizeOfTypeInBits(self.llvm_inner(), t.as_ref().llvm_inner()) as usize
+            llvm::target::LLVMSizeOfTypeInBits(self.llvm(), t.as_ref().llvm()) as usize
         }
     }
 
     pub fn store_size_of_type(&self, t: impl AsRef<Type<'a>>) -> usize {
         unsafe {
-            llvm::target::LLVMStoreSizeOfType(self.llvm_inner(), t.as_ref().llvm_inner()) as usize
+            llvm::target::LLVMStoreSizeOfType(self.llvm(), t.as_ref().llvm()) as usize
         }
     }
 
     pub fn abi_size_of_type(&self, t: impl AsRef<Type<'a>>) -> usize {
         unsafe {
-            llvm::target::LLVMABISizeOfType(self.llvm_inner(), t.as_ref().llvm_inner()) as usize
+            llvm::target::LLVMABISizeOfType(self.llvm(), t.as_ref().llvm()) as usize
         }
     }
 
     pub fn abi_alignment_of_type(&self, t: impl AsRef<Type<'a>>) -> usize {
         unsafe {
-            llvm::target::LLVMABIAlignmentOfType(self.llvm_inner(), t.as_ref().llvm_inner())
+            llvm::target::LLVMABIAlignmentOfType(self.llvm(), t.as_ref().llvm())
                 as usize
         }
     }
 
     pub fn call_frame_alignment_of_type(&self, t: impl AsRef<Type<'a>>) -> usize {
         unsafe {
-            llvm::target::LLVMCallFrameAlignmentOfType(self.llvm_inner(), t.as_ref().llvm_inner())
+            llvm::target::LLVMCallFrameAlignmentOfType(self.llvm(), t.as_ref().llvm())
                 as usize
         }
     }
 
     pub fn preferred_alignment_of_type(&self, t: impl AsRef<Type<'a>>) -> usize {
         unsafe {
-            llvm::target::LLVMPreferredAlignmentOfType(self.llvm_inner(), t.as_ref().llvm_inner())
+            llvm::target::LLVMPreferredAlignmentOfType(self.llvm(), t.as_ref().llvm())
                 as usize
         }
     }
 
     pub fn preferred_alignment_of_global(&self, t: impl AsRef<Value<'a>>) -> usize {
         unsafe {
-            llvm::target::LLVMPreferredAlignmentOfGlobal(self.llvm_inner(), t.as_ref().llvm_inner())
+            llvm::target::LLVMPreferredAlignmentOfGlobal(self.llvm(), t.as_ref().llvm())
                 as usize
         }
     }
@@ -116,8 +116,8 @@ impl<'a> TargetData<'a> {
     pub fn struct_element_at_offset(&self, t: impl AsRef<Type<'a>>, offset: usize) -> usize {
         unsafe {
             llvm::target::LLVMElementAtOffset(
-                self.llvm_inner(),
-                t.as_ref().llvm_inner(),
+                self.llvm(),
+                t.as_ref().llvm(),
                 offset as u64,
             ) as usize
         }
@@ -126,8 +126,8 @@ impl<'a> TargetData<'a> {
     pub fn struct_offset_of_element(&self, t: impl AsRef<Type<'a>>, offset: usize) -> usize {
         unsafe {
             llvm::target::LLVMOffsetOfElement(
-                self.llvm_inner(),
-                t.as_ref().llvm_inner(),
+                self.llvm(),
+                t.as_ref().llvm(),
                 offset as c_uint,
             ) as usize
         }
@@ -210,7 +210,7 @@ llvm_inner_impl!(
 
 impl<'a> Drop for TargetMachine<'a> {
     fn drop(&mut self) {
-        unsafe { llvm::target_machine::LLVMDisposeTargetMachine(self.llvm_inner()) }
+        unsafe { llvm::target_machine::LLVMDisposeTargetMachine(self.llvm()) }
     }
 }
 
@@ -246,7 +246,7 @@ impl<'a> TargetMachine<'a> {
     pub fn triple(&self) -> Message {
         unsafe {
             Message::from_raw(llvm::target_machine::LLVMGetTargetMachineTriple(
-                self.llvm_inner(),
+                self.llvm(),
             ))
         }
     }
@@ -254,7 +254,7 @@ impl<'a> TargetMachine<'a> {
     pub fn cpu(&self) -> Message {
         unsafe {
             Message::from_raw(llvm::target_machine::LLVMGetTargetMachineCPU(
-                self.llvm_inner(),
+                self.llvm(),
             ))
         }
     }
@@ -262,7 +262,7 @@ impl<'a> TargetMachine<'a> {
     pub fn features(&self) -> Message {
         unsafe {
             Message::from_raw(llvm::target_machine::LLVMGetTargetMachineFeatureString(
-                self.llvm_inner(),
+                self.llvm(),
             ))
         }
     }
@@ -270,7 +270,7 @@ impl<'a> TargetMachine<'a> {
     pub fn data_layout(&self) -> Result<TargetData<'a>, Error> {
         unsafe {
             TargetData::from_inner(llvm::target_machine::LLVMCreateTargetDataLayout(
-                self.llvm_inner(),
+                self.llvm(),
             ))
         }
     }

@@ -15,7 +15,7 @@ impl<'a> Drop for Context<'a> {
             return;
         }
 
-        unsafe { llvm::core::LLVMContextDispose(self.llvm_inner()) }
+        unsafe { llvm::core::LLVMContextDispose(self.llvm()) }
     }
 }
 
@@ -71,14 +71,14 @@ impl<'a> Context<'a> {
     pub fn set_discard_value_names(&mut self, discard: bool) {
         unsafe {
             llvm::core::LLVMContextSetDiscardValueNames(
-                self.llvm_inner(),
+                self.llvm(),
                 if discard { 1 } else { 0 },
             )
         }
     }
 
     pub fn discard_value_names(&mut self) -> bool {
-        unsafe { llvm::core::LLVMContextShouldDiscardValueNames(self.llvm_inner()) == 1 }
+        unsafe { llvm::core::LLVMContextShouldDiscardValueNames(self.llvm()) == 1 }
     }
 
     /// Insert a new basic block
@@ -90,8 +90,8 @@ impl<'a> Context<'a> {
         let name = cstr!(name.as_ref());
         let bb = unsafe {
             llvm::core::LLVMInsertBasicBlockInContext(
-                self.llvm_inner(),
-                bb.llvm_inner(),
+                self.llvm(),
+                bb.llvm(),
                 name.as_ptr(),
             )
         };
@@ -102,7 +102,7 @@ impl<'a> Context<'a> {
         let len = name.as_ref().len();
         let name = cstr!(name.as_ref());
         unsafe {
-            llvm::core::LLVMGetMDKindIDInContext(self.llvm_inner(), name.as_ptr(), len as u32)
+            llvm::core::LLVMGetMDKindIDInContext(self.llvm(), name.as_ptr(), len as u32)
         }
     }
 

@@ -21,9 +21,9 @@ impl<'a> Metadata<'a> {
         unsafe {
             Ok(Metadata(Value::from_inner(
                 llvm::core::LLVMMetadataAsValue(
-                    ctx.llvm_inner(),
+                    ctx.llvm(),
                     llvm::core::LLVMMDStringInContext2(
-                        ctx.llvm_inner(),
+                        ctx.llvm(),
                         k.as_ptr() as *const c_char,
                         k.len(),
                     ),
@@ -40,13 +40,13 @@ impl<'a> Metadata<'a> {
         let mut ptr: Vec<*mut llvm::LLVMOpaqueMetadata> = mds
             .as_ref()
             .iter()
-            .map(|x| unsafe { llvm::core::LLVMValueAsMetadata(x.as_ref().llvm_inner()) })
+            .map(|x| unsafe { llvm::core::LLVMValueAsMetadata(x.as_ref().llvm()) })
             .collect();
         unsafe {
             Ok(Metadata(Value::from_inner(
                 llvm::core::LLVMMetadataAsValue(
-                    ctx.llvm_inner(),
-                    llvm::core::LLVMMDNodeInContext2(ctx.llvm_inner(), ptr.as_mut_ptr(), ptr.len()),
+                    ctx.llvm(),
+                    llvm::core::LLVMMDNodeInContext2(ctx.llvm(), ptr.as_mut_ptr(), ptr.len()),
                 ),
             )?))
         }
@@ -55,7 +55,7 @@ impl<'a> Metadata<'a> {
     pub fn as_str(&self) -> Result<&str, Error> {
         unsafe {
             let mut len = 0;
-            let ptr = llvm::core::LLVMGetMDString(self.as_ref().llvm_inner(), &mut len);
+            let ptr = llvm::core::LLVMGetMDString(self.as_ref().llvm(), &mut len);
             if ptr.is_null() {
                 return Err(Error::NullPointer);
             }
@@ -68,9 +68,9 @@ impl<'a> Metadata<'a> {
 
     pub fn node(&self) -> Vec<Metadata<'a>> {
         unsafe {
-            let len = llvm::core::LLVMGetMDNodeNumOperands(self.as_ref().llvm_inner());
+            let len = llvm::core::LLVMGetMDNodeNumOperands(self.as_ref().llvm());
             let mut a = vec![std::ptr::null_mut(); len as usize];
-            llvm::core::LLVMGetMDNodeOperands(self.as_ref().llvm_inner(), a.as_mut_ptr());
+            llvm::core::LLVMGetMDNodeOperands(self.as_ref().llvm(), a.as_mut_ptr());
             a.into_iter()
                 .map(|x| Metadata(Value::from_inner(x).unwrap()))
                 .collect()

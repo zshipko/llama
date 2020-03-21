@@ -6,7 +6,7 @@ llvm_inner_impl!(Binary, llvm::object::LLVMOpaqueBinary);
 
 impl<'a> Drop for Binary {
     fn drop(&mut self) {
-        unsafe { llvm::object::LLVMDisposeBinary(self.llvm_inner()) }
+        unsafe { llvm::object::LLVMDisposeBinary(self.llvm()) }
     }
 }
 
@@ -15,7 +15,7 @@ impl<'a> Binary {
     pub fn new(ctx: &Context, data: &MemoryBuffer) -> Result<Binary, Error> {
         let mut message = std::ptr::null_mut();
         let bin = unsafe {
-            llvm::object::LLVMCreateBinary(data.llvm_inner(), ctx.llvm_inner(), &mut message)
+            llvm::object::LLVMCreateBinary(data.llvm(), ctx.llvm(), &mut message)
         };
 
         let message = Message::from_raw(message);
@@ -28,12 +28,12 @@ impl<'a> Binary {
 
     /// Get binary file type
     pub fn get_type(&self) -> BinaryType {
-        unsafe { llvm::object::LLVMBinaryGetType(self.llvm_inner()) }
+        unsafe { llvm::object::LLVMBinaryGetType(self.llvm()) }
     }
 
     /// Write binary object to file
     pub fn write_to_file(&self, path: impl AsRef<std::path::Path>) -> Result<(), Error> {
-        let buffer = unsafe { llvm::object::LLVMBinaryCopyMemoryBuffer(self.llvm_inner()) };
+        let buffer = unsafe { llvm::object::LLVMBinaryCopyMemoryBuffer(self.llvm()) };
         let buf = MemoryBuffer::from_raw(buffer)?;
         buf.write_to_file(path)
     }
@@ -41,7 +41,7 @@ impl<'a> Binary {
 
 impl<'a> AsRef<[u8]> for Binary {
     fn as_ref(&self) -> &[u8] {
-        let buffer = unsafe { llvm::object::LLVMBinaryCopyMemoryBuffer(self.llvm_inner()) };
+        let buffer = unsafe { llvm::object::LLVMBinaryCopyMemoryBuffer(self.llvm()) };
         let buf = MemoryBuffer::from_raw(buffer).unwrap();
         let ptr = buf.as_ref().as_ptr();
         let len = buf.len();

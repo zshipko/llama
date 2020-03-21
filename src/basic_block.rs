@@ -20,7 +20,7 @@ impl<'a> BasicBlock<'a> {
     pub fn new(ctx: &'a Context, name: impl AsRef<str>) -> Result<Self, Error> {
         let name = cstr!(name.as_ref());
         let bb =
-            unsafe { llvm::core::LLVMCreateBasicBlockInContext(ctx.llvm_inner(), name.as_ptr()) };
+            unsafe { llvm::core::LLVMCreateBasicBlockInContext(ctx.llvm(), name.as_ptr()) };
         Self::from_inner(bb)
     }
 
@@ -38,8 +38,8 @@ impl<'a> BasicBlock<'a> {
         let name = cstr!(name.as_ref());
         let bb = unsafe {
             llvm::core::LLVMAppendBasicBlockInContext(
-                ctx.llvm_inner(),
-                f.as_ref().llvm_inner(),
+                ctx.llvm(),
+                f.as_ref().llvm(),
                 name.as_ptr(),
             )
         };
@@ -48,34 +48,34 @@ impl<'a> BasicBlock<'a> {
 
     /// Remove and destroy basic block
     pub fn delete(self) {
-        unsafe { llvm::core::LLVMDeleteBasicBlock(self.llvm_inner()) }
+        unsafe { llvm::core::LLVMDeleteBasicBlock(self.llvm()) }
     }
 
     /// Remove basic block, keeping the block alive
     pub fn remove_from_parent(&self) {
-        unsafe { llvm::core::LLVMRemoveBasicBlockFromParent(self.llvm_inner()) }
+        unsafe { llvm::core::LLVMRemoveBasicBlockFromParent(self.llvm()) }
     }
 
     /// Move basic block before another basic block
     pub fn move_before(&self, bb: &BasicBlock<'a>) {
-        unsafe { llvm::core::LLVMMoveBasicBlockBefore(self.llvm_inner(), bb.llvm_inner()) }
+        unsafe { llvm::core::LLVMMoveBasicBlockBefore(self.llvm(), bb.llvm()) }
     }
 
     /// Move basic block after another basic block
     pub fn move_after(&self, bb: &BasicBlock<'a>) {
-        unsafe { llvm::core::LLVMMoveBasicBlockAfter(self.llvm_inner(), bb.llvm_inner()) }
+        unsafe { llvm::core::LLVMMoveBasicBlockAfter(self.llvm(), bb.llvm()) }
     }
 
     /// Convert a basic block to a `Value`
     pub fn to_value(&self) -> Result<Value<'a>, Error> {
-        let ptr = unsafe { llvm::core::LLVMBasicBlockAsValue(self.llvm_inner()) };
+        let ptr = unsafe { llvm::core::LLVMBasicBlockAsValue(self.llvm()) };
         Value::from_inner(ptr)
     }
 
     /// Get the basic block name
     pub fn name(&self) -> Result<&str, Error> {
         unsafe {
-            let s = llvm::core::LLVMGetBasicBlockName(self.llvm_inner());
+            let s = llvm::core::LLVMGetBasicBlockName(self.llvm());
             let s = std::slice::from_raw_parts(s as *const u8, strlen(s));
             let s = std::str::from_utf8(s)?;
             Ok(s)
@@ -85,7 +85,7 @@ impl<'a> BasicBlock<'a> {
     /// Get the basic block parent value
     pub fn parent(&self) -> Result<Value<'a>, Error> {
         unsafe {
-            let ptr = llvm::core::LLVMGetBasicBlockParent(self.llvm_inner());
+            let ptr = llvm::core::LLVMGetBasicBlockParent(self.llvm());
             Value::from_inner(ptr)
         }
     }
@@ -93,7 +93,7 @@ impl<'a> BasicBlock<'a> {
     /// Get the basic block terminator value
     pub fn terminator(&self) -> Result<Value<'a>, Error> {
         unsafe {
-            let ptr = llvm::core::LLVMGetBasicBlockTerminator(self.llvm_inner());
+            let ptr = llvm::core::LLVMGetBasicBlockTerminator(self.llvm());
             Value::from_inner(ptr)
         }
     }
@@ -101,7 +101,7 @@ impl<'a> BasicBlock<'a> {
     /// Get the first instruction in a basic block
     pub fn first_instruction(&self) -> Result<Value<'a>, Error> {
         unsafe {
-            let ptr = llvm::core::LLVMGetFirstInstruction(self.llvm_inner());
+            let ptr = llvm::core::LLVMGetFirstInstruction(self.llvm());
             Value::from_inner(ptr)
         }
     }
@@ -109,7 +109,7 @@ impl<'a> BasicBlock<'a> {
     /// Get the last instruction in a basic block
     pub fn last_instruction(&self) -> Result<Value<'a>, Error> {
         unsafe {
-            let ptr = llvm::core::LLVMGetLastInstruction(self.llvm_inner());
+            let ptr = llvm::core::LLVMGetLastInstruction(self.llvm());
             Value::from_inner(ptr)
         }
     }
@@ -117,7 +117,7 @@ impl<'a> BasicBlock<'a> {
     /// Get the next basic block
     pub fn next_basic_block(&self) -> Result<BasicBlock<'a>, Error> {
         unsafe {
-            let ptr = llvm::core::LLVMGetNextBasicBlock(self.llvm_inner());
+            let ptr = llvm::core::LLVMGetNextBasicBlock(self.llvm());
             Self::from_inner(ptr)
         }
     }
@@ -125,7 +125,7 @@ impl<'a> BasicBlock<'a> {
     /// Get the previous basic_block
     pub fn prev_basic_block(&self) -> Result<BasicBlock<'a>, Error> {
         unsafe {
-            let ptr = llvm::core::LLVMGetPreviousBasicBlock(self.llvm_inner());
+            let ptr = llvm::core::LLVMGetPreviousBasicBlock(self.llvm());
             Self::from_inner(ptr)
         }
     }

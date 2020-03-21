@@ -7,8 +7,8 @@ macro_rules! cstr {
 
 macro_rules! llvm_inner_impl {
     ($t:ty, $u:ty) => {
-        impl<'a> LLVMInner<$u> for $t {
-            fn llvm_inner(&self) -> *mut $u {
+        impl<'a> LLVM<$u> for $t {
+            fn llvm(&self) -> *mut $u {
                 self.0.as_ptr()
             }
         }
@@ -35,6 +35,7 @@ macro_rules! instr {
     }
 }
 
+
 extern "C" {
     fn strlen(_: *const std::os::raw::c_char) -> usize;
 }
@@ -53,7 +54,7 @@ mod metadata;
 mod module;
 mod pass_manager;
 mod target;
-mod typ;
+mod r#type;
 mod value;
 
 pub(crate) use std::ffi::c_void;
@@ -79,7 +80,7 @@ pub use crate::pass_manager::{
 };
 pub use crate::r#const::Const;
 pub use crate::target::{Target, TargetData, TargetMachine};
-pub use crate::typ::{FunctionType, StructType, Type, TypeKind};
+pub use crate::r#type::{FunctionType, StructType, Type, TypeKind};
 pub use crate::value::{AttributeIndex, Function, Value, ValueKind};
 
 pub use llvm::{
@@ -98,9 +99,9 @@ pub use llvm::{
 };
 
 /// Allows for llama types to be converted into LLVM pointers
-pub trait LLVMInner<T> {
+pub trait LLVM<T> {
     /// Return a LLVM pointer
-    fn llvm_inner(&self) -> *mut T;
+    fn llvm(&self) -> *mut T;
 }
 
 pub(crate) fn wrap_inner<T>(x: *mut T) -> Result<NonNull<T>, Error> {
@@ -356,6 +357,7 @@ mod tests {
         let i64 = Type::int(&ctx, 64)?;
         let ft = FunctionType::new(&i64, &[&i64], false)?;
         let f = module.add_function("testing", &ft)?;
+
         builder.define_function(&f, |builder, _| {
             let params = f.params();
             let one = Const::int(&i64, 1, true)?;

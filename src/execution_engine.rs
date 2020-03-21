@@ -12,7 +12,7 @@ llvm_inner_impl!(
 
 impl<'a> Drop for ExecutionEngine<'a> {
     fn drop(&mut self) {
-        unsafe { llvm::execution_engine::LLVMDisposeExecutionEngine(self.llvm_inner()) }
+        unsafe { llvm::execution_engine::LLVMDisposeExecutionEngine(self.llvm()) }
     }
 }
 
@@ -25,7 +25,7 @@ impl<'a> ExecutionEngine<'a> {
         let r = unsafe {
             llvm::execution_engine::LLVMCreateExecutionEngineForModule(
                 &mut engine,
-                llvm::core::LLVMCloneModule(module.llvm_inner()),
+                llvm::core::LLVMCloneModule(module.llvm()),
                 &mut message,
             ) == 1
         };
@@ -46,7 +46,7 @@ impl<'a> ExecutionEngine<'a> {
         let r = unsafe {
             llvm::execution_engine::LLVMCreateJITCompilerForModule(
                 &mut engine,
-                llvm::core::LLVMCloneModule(module.llvm_inner()),
+                llvm::core::LLVMCloneModule(module.llvm()),
                 opt as u32,
                 &mut message,
             ) == 1
@@ -75,7 +75,7 @@ impl<'a> ExecutionEngine<'a> {
         let r = unsafe {
             llvm::execution_engine::LLVMCreateMCJITCompilerForModule(
                 &mut engine,
-                llvm::core::LLVMCloneModule(module.llvm_inner()),
+                llvm::core::LLVMCloneModule(module.llvm()),
                 &mut opts,
                 std::mem::size_of::<llvm::execution_engine::LLVMMCJITCompilerOptions>(),
                 &mut message,
@@ -93,7 +93,7 @@ impl<'a> ExecutionEngine<'a> {
     pub fn function<T>(&self, name: impl AsRef<str>) -> Result<T, Error> {
         let name = cstr!(name.as_ref());
         let ptr = unsafe {
-            llvm::execution_engine::LLVMGetFunctionAddress(self.llvm_inner(), name.as_ptr())
+            llvm::execution_engine::LLVMGetFunctionAddress(self.llvm(), name.as_ptr())
         };
 
         unsafe { Ok(std::mem::transmute_copy(&(ptr as *mut c_void))) }
@@ -102,7 +102,7 @@ impl<'a> ExecutionEngine<'a> {
     pub fn global_value<T>(&self, name: impl AsRef<str>) -> Result<Value<'a>, Error> {
         let name = cstr!(name.as_ref());
         let ptr = unsafe {
-            llvm::execution_engine::LLVMGetGlobalValueAddress(self.llvm_inner(), name.as_ptr())
+            llvm::execution_engine::LLVMGetGlobalValueAddress(self.llvm(), name.as_ptr())
         } as *mut llvm::LLVMValue;
         Value::from_inner(ptr)
     }
@@ -110,8 +110,8 @@ impl<'a> ExecutionEngine<'a> {
     pub fn global<T>(&self, global: impl AsRef<Value<'a>>) -> Result<*mut T, Error> {
         let ptr = unsafe {
             llvm::execution_engine::LLVMGetPointerToGlobal(
-                self.llvm_inner(),
-                global.as_ref().llvm_inner(),
+                self.llvm(),
+                global.as_ref().llvm(),
             )
         };
 
@@ -119,22 +119,22 @@ impl<'a> ExecutionEngine<'a> {
     }
 
     pub fn run_static_constructors(&self) {
-        unsafe { llvm::execution_engine::LLVMRunStaticConstructors(self.llvm_inner()) }
+        unsafe { llvm::execution_engine::LLVMRunStaticConstructors(self.llvm()) }
     }
 
     pub fn run_static_destructors(&self) {
-        unsafe { llvm::execution_engine::LLVMRunStaticDestructors(self.llvm_inner()) }
+        unsafe { llvm::execution_engine::LLVMRunStaticDestructors(self.llvm()) }
     }
 
     pub fn add_module(&mut self, module: &Module<'a>) {
-        unsafe { llvm::execution_engine::LLVMAddModule(self.llvm_inner(), module.llvm_inner()) }
+        unsafe { llvm::execution_engine::LLVMAddModule(self.llvm(), module.llvm()) }
     }
 
     pub fn add_global_mapping<T>(&mut self, global: impl AsRef<Value<'a>>, data: &'a T) {
         unsafe {
             llvm::execution_engine::LLVMAddGlobalMapping(
-                self.llvm_inner(),
-                global.as_ref().llvm_inner(),
+                self.llvm(),
+                global.as_ref().llvm(),
                 data as *const T as *mut c_void,
             )
         }
@@ -142,7 +142,7 @@ impl<'a> ExecutionEngine<'a> {
 
     pub fn target_data(&self) -> Result<TargetData, Error> {
         let x =
-            unsafe { llvm::execution_engine::LLVMGetExecutionEngineTargetData(self.llvm_inner()) };
+            unsafe { llvm::execution_engine::LLVMGetExecutionEngineTargetData(self.llvm()) };
         TargetData::from_inner(x)
     }
 }

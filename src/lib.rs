@@ -78,8 +78,8 @@ pub use crate::pass_manager::{
     transforms, FunctionPassManager, ModulePassManager, PassManager, Transform,
 };
 pub use crate::r#const::Const;
-pub use crate::target::{Target, TargetData, TargetMachine};
 pub use crate::r#type::{FunctionType, StructType, Type, TypeKind};
+pub use crate::target::{Target, TargetData, TargetMachine};
 pub use crate::value::{AttributeIndex, Function, Value, ValueKind};
 
 pub use llvm::{
@@ -254,8 +254,11 @@ impl Drop for MemoryBuffer {
     }
 }
 
-pub fn load_library(filename: impl AsRef<str>) -> bool {
-    let filename = cstr!(filename.as_ref());
+pub fn load_library(filename: impl AsRef<std::path::PathBuf>) -> bool {
+    let filename = cstr!(filename
+        .as_ref()
+        .to_str()
+        .expect("Invalid filename in call to load_library"));
     unsafe { llvm::support::LLVMLoadLibraryPermanently(filename.as_ptr()) == 0 }
 }
 

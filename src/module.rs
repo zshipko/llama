@@ -149,13 +149,16 @@ impl<'a> Module<'a> {
         t: &FunctionType,
     ) -> Result<Function<'a>, Error> {
         let name = cstr!(name.as_ref());
-        let value = unsafe {
-            llvm::core::LLVMAddFunction(self.llvm(), name.as_ptr(), t.as_ref().llvm())
-        };
+        let value =
+            unsafe { llvm::core::LLVMAddFunction(self.llvm(), name.as_ptr(), t.as_ref().llvm()) };
         Ok(Function(Value::from_inner(value)?))
     }
 
-    pub fn add_global(&mut self, name: impl AsRef<str>, t: impl AsRef<Type<'a>>) -> Result<Function<'a>, Error> {
+    pub fn add_global(
+        &mut self,
+        name: impl AsRef<str>,
+        t: impl AsRef<Type<'a>>,
+    ) -> Result<Function<'a>, Error> {
         let name = cstr!(name.as_ref());
         let value =
             unsafe { llvm::core::LLVMAddGlobal(self.llvm(), t.as_ref().llvm(), name.as_ptr()) };
@@ -239,11 +242,8 @@ impl<'a> Module<'a> {
     pub fn parse_bitcode(ctx: &Context, mem_buf: &MemoryBuffer) -> Option<Module<'a>> {
         let mut module = std::ptr::null_mut();
         let ok = unsafe {
-            llvm::bit_reader::LLVMParseBitcodeInContext2(
-                ctx.llvm(),
-                mem_buf.llvm(),
-                &mut module,
-            ) == 1
+            llvm::bit_reader::LLVMParseBitcodeInContext2(ctx.llvm(), mem_buf.llvm(), &mut module)
+                == 1
         };
 
         if !ok {
@@ -265,9 +265,8 @@ impl<'a> Module<'a> {
             None => return Err(Error::InvalidPath),
         };
 
-        let r = unsafe {
-            llvm::bit_writer::LLVMWriteBitcodeToFile(self.llvm(), path.as_ptr()) == 0
-        };
+        let r =
+            unsafe { llvm::bit_writer::LLVMWriteBitcodeToFile(self.llvm(), path.as_ptr()) == 0 };
 
         Ok(r)
     }
@@ -288,12 +287,7 @@ impl<'a> Module<'a> {
 
     pub fn type_by_name(&self, name: impl AsRef<str>) -> Result<Type<'a>, Error> {
         let name = cstr!(name.as_ref());
-        unsafe {
-            Type::from_inner(llvm::core::LLVMGetTypeByName(
-                self.llvm(),
-                name.as_ptr(),
-            ))
-        }
+        unsafe { Type::from_inner(llvm::core::LLVMGetTypeByName(self.llvm(), name.as_ptr())) }
     }
 
     pub fn set_wasm32(&mut self) {

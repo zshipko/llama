@@ -285,7 +285,7 @@ impl<'a> StructType<'a> {
         }
     }
 
-    pub fn set_body(&mut self, fields: impl AsRef<[&'a Type<'a>]>, packed: bool) {
+    pub fn set_body<'b>(&'b mut self, fields: impl AsRef<[&'b Type<'a>]>, packed: bool) {
         let mut fields: Vec<*mut llvm::LLVMType> =
             fields.as_ref().iter().map(|x| x.llvm()).collect();
         let len = fields.len();

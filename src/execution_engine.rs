@@ -90,11 +90,10 @@ impl<'a> ExecutionEngine<'a> {
         Ok(ExecutionEngine(wrap_inner(engine)?, PhantomData))
     }
 
-    pub fn function<T>(&self, name: impl AsRef<str>) -> Result<T, Error> {
+    pub fn function<T: Copy>(&self, name: impl AsRef<str>) -> Result<T, Error> {
         let name = cstr!(name.as_ref());
-        let ptr = unsafe {
-            llvm::execution_engine::LLVMGetFunctionAddress(self.llvm(), name.as_ptr())
-        };
+        let ptr =
+            unsafe { llvm::execution_engine::LLVMGetFunctionAddress(self.llvm(), name.as_ptr()) };
 
         unsafe { Ok(std::mem::transmute_copy(&(ptr as *mut c_void))) }
     }
@@ -107,15 +106,12 @@ impl<'a> ExecutionEngine<'a> {
         Value::from_inner(ptr)
     }
 
-    pub fn global<T>(&self, global: impl AsRef<Value<'a>>) -> Result<*mut T, Error> {
+    pub fn global<T>(&self, global: impl AsRef<Value<'a>>) -> Result<&mut T, Error> {
         let ptr = unsafe {
-            llvm::execution_engine::LLVMGetPointerToGlobal(
-                self.llvm(),
-                global.as_ref().llvm(),
-            )
+            llvm::execution_engine::LLVMGetPointerToGlobal(self.llvm(), global.as_ref().llvm())
         };
 
-        unsafe { Ok(std::mem::transmute_copy(&(ptr as *mut c_void))) }
+        unsafe { Ok(&mut *(ptr as *mut T)) }
     }
 
     pub fn run_static_constructors(&self) {
@@ -141,8 +137,7 @@ impl<'a> ExecutionEngine<'a> {
     }
 
     pub fn target_data(&self) -> Result<TargetData, Error> {
-        let x =
-            unsafe { llvm::execution_engine::LLVMGetExecutionEngineTargetData(self.llvm()) };
+        let x = unsafe { llvm::execution_engine::LLVMGetExecutionEngineTargetData(self.llvm()) };
         TargetData::from_inner(x)
     }
 }

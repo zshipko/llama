@@ -11,7 +11,7 @@ pub type ValueKind = llvm::LLVMValueKind;
 pub enum AttributeIndex {
     Return,
     Param(u32),
-    Function,
+    Func,
 }
 
 impl AttributeIndex {
@@ -26,7 +26,7 @@ impl AttributeIndex {
 
                 index + 1
             }
-            AttributeIndex::Function => llvm::LLVMAttributeFunctionIndex,
+            AttributeIndex::Func => llvm::LLVMAttributeFunctionIndex,
         }
     }
 }
@@ -95,9 +95,7 @@ impl<'a> Value<'a> {
     }
 
     pub fn replace_all_uses_with(&self, other: impl AsRef<Value<'a>>) {
-        unsafe {
-            llvm::core::LLVMReplaceAllUsesWith(self.llvm(), other.as_ref().llvm())
-        }
+        unsafe { llvm::core::LLVMReplaceAllUsesWith(self.llvm(), other.as_ref().llvm()) }
     }
 
     pub fn delete_global(self) {
@@ -125,9 +123,7 @@ impl<'a> Value<'a> {
     }
 
     pub fn set_extern(&mut self, b: bool) {
-        unsafe {
-            llvm::core::LLVMSetExternallyInitialized(self.llvm(), if b { 1 } else { 0 })
-        }
+        unsafe { llvm::core::LLVMSetExternallyInitialized(self.llvm(), if b { 1 } else { 0 }) }
     }
 
     pub fn is_thread_local(&self) -> bool {
@@ -205,39 +201,37 @@ impl<'a> Value<'a> {
 
 impl<'a> std::fmt::Display for Value<'a> {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let message =
-            unsafe { Message::from_raw(llvm::core::LLVMPrintValueToString(self.llvm())) };
+        let message = unsafe { Message::from_raw(llvm::core::LLVMPrintValueToString(self.llvm())) };
         write!(fmt, "{}", message.as_ref())
     }
 }
 
-pub struct Function<'a>(pub(crate) Value<'a>);
+pub struct Func<'a>(pub(crate) Value<'a>);
 
-impl<'a> AsRef<Value<'a>> for Function<'a> {
+impl<'a> AsRef<Value<'a>> for Func<'a> {
     fn as_ref(&self) -> &Value<'a> {
         &self.0
     }
 }
 
-impl<'a> From<Function<'a>> for Value<'a> {
-    fn from(x: Function<'a>) -> Value<'a> {
+impl<'a> From<Func<'a>> for Value<'a> {
+    fn from(x: Func<'a>) -> Value<'a> {
         x.0
     }
 }
 
-impl<'a> Function<'a> {
+impl<'a> Func<'a> {
     pub fn param_count(&self) -> usize {
         let n = unsafe { llvm::core::LLVMCountParams(self.as_ref().llvm()) };
         n as usize
     }
 
+    pub fn func_type(&self) -> Result<FuncType<'a>, Error> {
+        self.as_ref().type_of().map(|x| x.into_func_type().unwrap())
+    }
+
     pub fn param(&self, i: usize) -> Result<Value<'a>, Error> {
-        unsafe {
-            Value::from_inner(llvm::core::LLVMGetParam(
-                self.as_ref().llvm(),
-                i as u32,
-            ))
-        }
+        unsafe { Value::from_inner(llvm::core::LLVMGetParam(self.as_ref().llvm(), i as u32)) }
     }
 
     pub fn params(&self) -> Vec<Value<'a>> {
@@ -266,14 +260,14 @@ impl<'a> Function<'a> {
         Ok(())
     }
 
-    pub fn next_function(&self) -> Result<Function<'a>, Error> {
+    pub fn next_function(&self) -> Result<Func<'a>, Error> {
         let v = unsafe { llvm::core::LLVMGetNextFunction(self.as_ref().llvm()) };
-        Value::from_inner(v).map(Function)
+        Value::from_inner(v).map(Func)
     }
 
-    pub fn prev_function(&self) -> Result<Function<'a>, Error> {
+    pub fn prev_function(&self) -> Result<Func<'a>, Error> {
         let v = unsafe { llvm::core::LLVMGetPreviousFunction(self.as_ref().llvm()) };
-        Value::from_inner(v).map(Function)
+        Value::from_inner(v).map(Func)
     }
 
     pub fn delete(self) {
@@ -289,9 +283,7 @@ impl<'a> Function<'a> {
     }
 
     pub fn set_personality_fn(&mut self, f: impl AsRef<Value<'a>>) {
-        unsafe {
-            llvm::core::LLVMSetPersonalityFn(self.as_ref().llvm(), f.as_ref().llvm())
-        }
+        unsafe { llvm::core::LLVMSetPersonalityFn(self.as_ref().llvm(), f.as_ref().llvm()) }
     }
 
     pub fn gc(&self) -> Option<&str> {
@@ -312,11 +304,7 @@ impl<'a> Function<'a> {
     }
 
     pub fn call_conv(&self) -> CallConv {
-        unsafe {
-            std::mem::transmute(llvm::core::LLVMGetFunctionCallConv(
-                self.as_ref().llvm(),
-            ))
-        }
+        unsafe { std::mem::transmute(llvm::core::LLVMGetFunctionCallConv(self.as_ref().llvm())) }
     }
 
     pub fn set_call_conv(&mut self, conv: CallConv) {

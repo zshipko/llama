@@ -7,7 +7,7 @@ llvm_inner_impl!(Type<'a>, llvm::LLVMType);
 
 pub type TypeKind = llvm::LLVMTypeKind;
 
-pub struct FunctionType<'a>(pub(crate) Type<'a>);
+pub struct FuncType<'a>(pub(crate) Type<'a>);
 
 impl<'a> Clone for Type<'a> {
     fn clone(&self) -> Type<'a> {
@@ -21,14 +21,14 @@ impl<'a> AsRef<Type<'a>> for Type<'a> {
     }
 }
 
-impl<'a> AsRef<Type<'a>> for FunctionType<'a> {
+impl<'a> AsRef<Type<'a>> for FuncType<'a> {
     fn as_ref(&self) -> &Type<'a> {
         &self.0
     }
 }
 
-impl<'a> From<FunctionType<'a>> for Type<'a> {
-    fn from(x: FunctionType<'a>) -> Type<'a> {
+impl<'a> From<FuncType<'a>> for Type<'a> {
+    fn from(x: FuncType<'a>) -> Type<'a> {
         x.0
     }
 }
@@ -146,12 +146,12 @@ impl<'a> Type<'a> {
         Self::from_inner(t)
     }
 
-    pub fn into_function_type(self) -> Result<FunctionType<'a>, Error> {
+    pub fn into_func_type(self) -> Result<FuncType<'a>, Error> {
         if !self.is(TypeKind::LLVMFunctionTypeKind) {
             return Err(Error::InvalidType);
         }
 
-        Ok(FunctionType(self))
+        Ok(FuncType(self))
     }
 
     pub fn into_struct_type(self) -> Result<StructType<'a>, Error> {
@@ -204,12 +204,12 @@ impl<'a> Type<'a> {
     }
 }
 
-impl<'a> FunctionType<'a> {
+impl<'a> FuncType<'a> {
     pub fn new(
         return_type: impl AsRef<Type<'a>>,
         params: impl AsRef<[&'a Type<'a>]>,
         var_arg: bool,
-    ) -> Result<FunctionType<'a>, Error> {
+    ) -> Result<FuncType<'a>, Error> {
         let mut params: Vec<*mut llvm::LLVMType> =
             params.as_ref().iter().map(|x| x.llvm()).collect();
         let len = params.len();
@@ -222,7 +222,7 @@ impl<'a> FunctionType<'a> {
             )
         };
         let x = Type::from_inner(t)?;
-        x.into_function_type()
+        x.into_func_type()
     }
 
     pub fn is_var_arg(&self) -> bool {

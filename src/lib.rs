@@ -75,12 +75,12 @@ pub use crate::instr::Instruction;
 pub use crate::metadata::Metadata;
 pub use crate::module::Module;
 pub use crate::pass_manager::{
-    transforms, FunctionPassManager, ModulePassManager, PassManager, Transform,
+    transforms, FuncPassManager, ModulePassManager, PassManager, Transform,
 };
 pub use crate::r#const::Const;
-pub use crate::r#type::{FunctionType, StructType, Type, TypeKind};
+pub use crate::r#type::{FuncType, StructType, Type, TypeKind};
 pub use crate::target::{Target, TargetData, TargetMachine};
-pub use crate::value::{AttributeIndex, Function, Value, ValueKind};
+pub use crate::value::{AttributeIndex, Func, Value, ValueKind};
 
 pub use llvm::{
     object::LLVMBinaryType as BinaryType,
@@ -288,9 +288,8 @@ mod tests {
 
         let i32 = Type::int(&context, 32)?;
 
-        let ft = FunctionType::new(&i32, &[&i32, &i32], false)?;
-        let f = module.add_function("testing", &ft)?;
-        builder.define_function(&f, |builder, _| {
+        let ft = FuncType::new(&i32, &[&i32, &i32], false)?;
+        module.declare_function(&builder, "testing", &ft, |f| {
             let params = f.params();
             let a = builder.add(&params[0], &params[1], "a")?;
             builder.ret(&a)
@@ -317,9 +316,8 @@ mod tests {
         let builder = Builder::new(&ctx)?;
 
         let f32 = Type::float(&ctx)?;
-        let ft = FunctionType::new(&f32, &[&f32], false)?;
-        let f = module.add_function("testing", &ft)?;
-        builder.define_function(&f, |builder, _| {
+        let ft = FuncType::new(&f32, &[&f32], false)?;
+        module.declare_function(&builder, "testing", &ft, |f| {
             let params = f.params();
             let cond = builder.fcmp(
                 FCmp::LLVMRealULT,
@@ -357,10 +355,8 @@ mod tests {
         let builder = Builder::new(&ctx)?;
 
         let i64 = Type::int(&ctx, 64)?;
-        let ft = FunctionType::new(&i64, &[&i64], false)?;
-        let f = module.add_function("testing", &ft)?;
-
-        builder.define_function(&f, |builder, _| {
+        let ft = FuncType::new(&i64, &[&i64], false)?;
+        module.declare_function(&builder, "testing", &ft, |f| {
             let params = f.params();
             let one = Const::int(&i64, 1, true)?;
             let f = builder.for_loop(

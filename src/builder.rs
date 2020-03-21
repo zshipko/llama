@@ -69,12 +69,12 @@ impl<'a> Builder<'a> {
         unsafe { BasicBlock::from_inner(llvm::core::LLVMGetInsertBlock(self.llvm())) }
     }
 
-    pub fn define_function<
+    pub fn function_body<
         T: Into<Value<'a>>,
         F: FnOnce(&Self, BasicBlock<'a>) -> Result<T, Error>,
     >(
         &self,
-        f: &Function<'a>,
+        f: &Func<'a>,
         def: F,
     ) -> Result<Instruction<'a>, Error> {
         let entry = BasicBlock::append(self.context(), f.as_ref(), "entry")?;
@@ -867,7 +867,7 @@ impl<'a> Builder<'a> {
         )
     });
 
-    instr!(call(&self, f: &Function<'a>, args: impl AsRef<[&'a Value<'a>]>, name: impl AsRef<str>) {
+    instr!(call(&self, f: &Func<'a>, args: impl AsRef<[&'a Value<'a>]>, name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
         let mut values: Vec<*mut llvm::LLVMValue> = args.as_ref().iter().map(|x| x.llvm()).collect();
         let ptr = values.as_mut_ptr();
@@ -876,7 +876,7 @@ impl<'a> Builder<'a> {
         llvm::core::LLVMBuildCall(self.llvm(), f.as_ref().llvm(), ptr, len as c_uint, name.as_ptr())
     });
 
-    instr!(call2(&self, t: impl AsRef<Type<'a>>, f: &Function<'a>, args: impl AsRef<[&'a Value<'a>]>, name: impl AsRef<str>) {
+    instr!(call2(&self, t: impl AsRef<Type<'a>>, f: &Func<'a>, args: impl AsRef<[&'a Value<'a>]>, name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
         let mut values: Vec<*mut llvm::LLVMValue> = args.as_ref().iter().map(|x| x.llvm()).collect();
         let ptr = values.as_mut_ptr();

@@ -5,8 +5,8 @@ pub enum Error {
     #[error("Target is not WASM")]
     InvalidTarget,
 
-    #[error("Function not found: {0}")]
-    FunctionNotFound(String),
+    #[error("Func not found: {0}")]
+    FuncNotFound(String),
 
     #[error("Llama: {0}")]
     Llama(#[from] llama::Error),
@@ -88,17 +88,15 @@ mod tests {
 
         let i32 = llama::Type::int(&context, 32)?;
 
-        let ft = llama::FunctionType::new(&i32, &[&i32, &i32], false)?;
-        let f = module.add_function("testing_sub", &ft)?;
-        builder.define_function(&f, |builder, _| {
+        let ft = llama::FuncType::new(&i32, &[&i32, &i32], false)?;
+        module.declare_function(&builder, "testing_sub", &ft, |f| {
             let params = f.params();
             let a = builder.sub(&params[0], &params[1], "a")?;
             builder.ret(&a)
         })?;
 
-        let ft = llama::FunctionType::new(&i32, &[&i32, &i32], false)?;
-        let f = module.add_function("testing", &ft)?;
-        builder.define_function(&f, |builder, _| {
+        let ft = llama::FuncType::new(&i32, &[&i32, &i32], false)?;
+        module.declare_function(&builder, "testing", &ft, |f| {
             let params = f.params();
             let a = builder.add(&params[0], &params[1], "a")?;
             builder.ret(&a)
@@ -124,9 +122,8 @@ mod tests {
         let builder = Builder::new(&ctx)?;
 
         let i64 = Type::int(&ctx, 64)?;
-        let ft = FunctionType::new(&i64, &[&i64], false)?;
-        let f = module.add_function("testing", &ft)?;
-        builder.define_function(&f, |builder, _| {
+        let ft = FuncType::new(&i64, &[&i64], false)?;
+        module.declare_function(&builder, "testing", &ft, |f| {
             let params = f.params();
             let one = Const::int(&i64, 1, true)?;
             let f = builder.for_loop(

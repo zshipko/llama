@@ -143,34 +143,45 @@ impl<'a> Module<'a> {
         Ok(())
     }
 
-    pub fn add_function(
+    pub fn define_function(
         &mut self,
         name: impl AsRef<str>,
-        t: &FunctionType,
-    ) -> Result<Function<'a>, Error> {
+        t: &FuncType,
+    ) -> Result<Func<'a>, Error> {
         let name = cstr!(name.as_ref());
         let value =
             unsafe { llvm::core::LLVMAddFunction(self.llvm(), name.as_ptr(), t.as_ref().llvm()) };
-        Ok(Function(Value::from_inner(value)?))
+        Ok(Func(Value::from_inner(value)?))
     }
 
-    pub fn add_global(
+    pub fn declare_function<T: Into<Value<'a>>, F: FnOnce(&Func<'a>) -> Result<T, Error>>(
+        &mut self,
+        builder: &Builder<'a>,
+        name: impl AsRef<str>,
+        ft: &FuncType,
+        def: F,
+    ) -> Result<Instruction<'a>, Error> {
+        let f = self.define_function(name, &ft)?;
+        builder.function_body(&f, |_, _| def(&f))
+    }
+
+    pub fn global(
         &mut self,
         name: impl AsRef<str>,
         t: impl AsRef<Type<'a>>,
-    ) -> Result<Function<'a>, Error> {
+    ) -> Result<Func<'a>, Error> {
         let name = cstr!(name.as_ref());
         let value =
             unsafe { llvm::core::LLVMAddGlobal(self.llvm(), t.as_ref().llvm(), name.as_ptr()) };
-        Ok(Function(Value::from_inner(value)?))
+        Ok(Func(Value::from_inner(value)?))
     }
 
-    pub fn add_global_in_address_space(
+    pub fn global_in_address_space(
         &mut self,
         name: impl AsRef<str>,
         t: impl AsRef<Type<'a>>,
         addr: usize,
-    ) -> Result<Function<'a>, Error> {
+    ) -> Result<Func<'a>, Error> {
         let name = cstr!(name.as_ref());
         let value = unsafe {
             llvm::core::LLVMAddGlobalInAddressSpace(
@@ -180,13 +191,13 @@ impl<'a> Module<'a> {
                 addr as c_uint,
             )
         };
-        Ok(Function(Value::from_inner(value)?))
+        Ok(Func(Value::from_inner(value)?))
     }
 
-    pub fn named_function(&self, name: impl AsRef<str>) -> Result<Function<'a>, Error> {
+    pub fn named_function(&self, name: impl AsRef<str>) -> Result<Func<'a>, Error> {
         let name = cstr!(name.as_ref());
         let value = unsafe { llvm::core::LLVMGetNamedFunction(self.llvm(), name.as_ptr()) };
-        Ok(Function(Value::from_inner(value)?))
+        Ok(Func(Value::from_inner(value)?))
     }
 
     pub fn first_global(&self) -> Result<Value<'a>, Error> {
@@ -204,14 +215,14 @@ impl<'a> Module<'a> {
         Value::from_inner(value)
     }
 
-    pub fn first_function(&self) -> Result<Function<'a>, Error> {
+    pub fn first_function(&self) -> Result<Func<'a>, Error> {
         let value = unsafe { llvm::core::LLVMGetFirstFunction(self.llvm()) };
-        Ok(Function(Value::from_inner(value)?))
+        Ok(Func(Value::from_inner(value)?))
     }
 
-    pub fn last_function(&self) -> Result<Function<'a>, Error> {
+    pub fn last_function(&self) -> Result<Func<'a>, Error> {
         let value = unsafe { llvm::core::LLVMGetLastFunction(self.llvm()) };
-        Ok(Function(Value::from_inner(value)?))
+        Ok(Func(Value::from_inner(value)?))
     }
 
     /// Create a new module from existing IR

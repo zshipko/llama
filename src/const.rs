@@ -69,7 +69,7 @@ impl<'a> Const<'a> {
     });
 
     const_func!(string(
-        ctx: &'a Context,
+        ctx: &Context<'a>,
         s: impl AsRef<str>,
         no_null_terminator: bool,
     ) {
@@ -130,7 +130,7 @@ impl<'a> Const<'a> {
     });
 
     pub fn crate_struct(
-        ctx: &'a Context,
+        ctx: &Context<'a>,
         vals: impl AsRef<[Value<'a>]>,
         packed: bool,
     ) -> Result<Const<'a>, Error> {

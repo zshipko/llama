@@ -17,7 +17,7 @@ impl<'a> Drop for ExecutionEngine<'a> {
 }
 
 impl<'a> ExecutionEngine<'a> {
-    pub fn new(module: &'a Module) -> Result<ExecutionEngine<'a>, Error> {
+    pub fn new(module: &Module<'a>) -> Result<ExecutionEngine<'a>, Error> {
         unsafe { llvm::execution_engine::LLVMLinkInInterpreter() }
 
         let mut engine = std::ptr::null_mut();
@@ -38,7 +38,7 @@ impl<'a> ExecutionEngine<'a> {
         Ok(ExecutionEngine(wrap_inner(engine)?, PhantomData))
     }
 
-    pub fn new_jit(module: &'a Module, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
+    pub fn new_jit(module: &Module<'a>, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
         unsafe { llvm::execution_engine::LLVMLinkInMCJIT() }
 
         let mut engine = std::ptr::null_mut();
@@ -60,7 +60,7 @@ impl<'a> ExecutionEngine<'a> {
         Ok(ExecutionEngine(wrap_inner(engine)?, PhantomData))
     }
 
-    pub fn new_mcjit(module: &'a Module, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
+    pub fn new_mcjit(module: &Module<'a>, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
         unsafe { llvm::execution_engine::LLVMLinkInMCJIT() }
 
         let mut opts = llvm::execution_engine::LLVMMCJITCompilerOptions {

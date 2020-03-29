@@ -21,7 +21,7 @@ impl<'a> Clone for Module<'a> {
 
 impl<'a> Module<'a> {
     /// Create a new module
-    pub fn new(ctx: &'a Context, name: impl AsRef<str>) -> Result<Module<'a>, Error> {
+    pub fn new(ctx: &Context<'a>, name: impl AsRef<str>) -> Result<Module<'a>, Error> {
         let name = cstr!(name.as_ref());
         let m = unsafe {
             wrap_inner(llvm::core::LLVMModuleCreateWithNameInContext(
@@ -32,7 +32,7 @@ impl<'a> Module<'a> {
         Ok(Module(m, PhantomData))
     }
 
-    pub fn context(&'a self) -> Result<Context<'a>, Error> {
+    pub fn context(&self) -> Result<Context<'a>, Error> {
         let ctx = unsafe { wrap_inner(llvm::core::LLVMGetModuleContext(self.llvm()))? };
         Ok(Context(ctx, false, PhantomData))
     }

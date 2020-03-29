@@ -74,7 +74,7 @@ impl<'a> Type<'a> {
         Ok(Context(ctx, false, PhantomData))
     }
 
-    pub fn int(ctx: &'a Context, bits: usize) -> Result<Type<'a>, Error> {
+    pub fn int(ctx: &Context<'a>, bits: usize) -> Result<Type<'a>, Error> {
         unsafe {
             Self::from_inner(llvm::core::LLVMIntTypeInContext(
                 ctx.llvm(),
@@ -83,23 +83,23 @@ impl<'a> Type<'a> {
         }
     }
 
-    pub fn i64(ctx: &'a Context) -> Result<Type<'a>, Error> {
+    pub fn i64(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
         Self::int(ctx, 64)
     }
 
-    pub fn i32(ctx: &'a Context) -> Result<Type<'a>, Error> {
+    pub fn i32(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
         Self::int(ctx, 32)
     }
 
-    pub fn i16(ctx: &'a Context) -> Result<Type<'a>, Error> {
+    pub fn i16(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
         Self::int(ctx, 16)
     }
 
-    pub fn i8(ctx: &'a Context) -> Result<Type<'a>, Error> {
+    pub fn i8(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
         Self::int(ctx, 8)
     }
 
-    pub fn i1(ctx: &'a Context) -> Result<Type<'a>, Error> {
+    pub fn i1(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
         Self::int(ctx, 1)
     }
 
@@ -107,39 +107,39 @@ impl<'a> Type<'a> {
         self.kind() == kind
     }
 
-    pub fn void(ctx: &'a Context) -> Result<Type<'a>, Error> {
+    pub fn void(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
         unsafe { Self::from_inner(llvm::core::LLVMVoidTypeInContext(ctx.llvm())) }
     }
 
-    pub fn label(ctx: &'a Context) -> Result<Type<'a>, Error> {
+    pub fn label(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
         unsafe { Self::from_inner(llvm::core::LLVMLabelTypeInContext(ctx.llvm())) }
     }
 
-    pub fn token(ctx: &'a Context) -> Result<Type<'a>, Error> {
+    pub fn token(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
         unsafe { Self::from_inner(llvm::core::LLVMTokenTypeInContext(ctx.llvm())) }
     }
 
-    pub fn metadata(ctx: &'a Context) -> Result<Type<'a>, Error> {
+    pub fn metadata(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
         unsafe { Self::from_inner(llvm::core::LLVMMetadataTypeInContext(ctx.llvm())) }
     }
 
-    pub fn x86_mmx(ctx: &'a Context) -> Result<Type<'a>, Error> {
+    pub fn x86_mmx(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
         unsafe { Self::from_inner(llvm::core::LLVMX86MMXTypeInContext(ctx.llvm())) }
     }
 
-    pub fn half(ctx: &'a Context) -> Result<Type<'a>, Error> {
+    pub fn half(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
         unsafe { Self::from_inner(llvm::core::LLVMHalfTypeInContext(ctx.llvm())) }
     }
 
-    pub fn float(ctx: &'a Context) -> Result<Type<'a>, Error> {
+    pub fn float(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
         unsafe { Self::from_inner(llvm::core::LLVMFloatTypeInContext(ctx.llvm())) }
     }
 
-    pub fn double(ctx: &'a Context) -> Result<Type<'a>, Error> {
+    pub fn double(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
         unsafe { Self::from_inner(llvm::core::LLVMDoubleTypeInContext(ctx.llvm())) }
     }
 
-    pub fn fp128(ctx: &'a Context) -> Result<Type<'a>, Error> {
+    pub fn fp128(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
         unsafe { Self::from_inner(llvm::core::LLVMFP128TypeInContext(ctx.llvm())) }
     }
 
@@ -254,7 +254,7 @@ impl<'a> FuncType<'a> {
 
 impl<'a> StructType<'a> {
     pub fn new(
-        ctx: &'a Context,
+        ctx: &Context<'a>,
         fields: impl AsRef<[Type<'a>]>,
         packed: bool,
     ) -> Result<StructType<'a>, Error> {
@@ -272,7 +272,10 @@ impl<'a> StructType<'a> {
         Type::from_inner(t)?.into_struct_type()
     }
 
-    pub fn new_with_name(ctx: &'a Context, name: impl AsRef<str>) -> Result<StructType<'a>, Error> {
+    pub fn new_with_name(
+        ctx: &Context<'a>,
+        name: impl AsRef<str>,
+    ) -> Result<StructType<'a>, Error> {
         let name = cstr!(name.as_ref());
         let t = unsafe { llvm::core::LLVMStructCreateNamed(ctx.llvm(), name.as_ptr()) };
         Type::from_inner(t)?.into_struct_type()

@@ -18,7 +18,7 @@ impl<'a> BasicBlock<'a> {
     }
 
     /// Create a new basic block
-    pub fn new(ctx: &'a Context, name: impl AsRef<str>) -> Result<Self, Error> {
+    pub fn new(ctx: &Context<'a>, name: impl AsRef<str>) -> Result<Self, Error> {
         let name = cstr!(name.as_ref());
         let bb = unsafe { llvm::core::LLVMCreateBasicBlockInContext(ctx.llvm(), name.as_ptr()) };
         Self::from_inner(bb)
@@ -31,7 +31,7 @@ impl<'a> BasicBlock<'a> {
 
     /// Append a new value to the basic block
     pub fn append(
-        ctx: &'a Context,
+        ctx: &Context<'a>,
         f: impl AsRef<Value<'a>>,
         name: impl AsRef<str>,
     ) -> Result<Self, Error> {

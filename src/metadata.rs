@@ -17,7 +17,7 @@ impl<'a> From<Metadata<'a>> for Value<'a> {
 
 impl<'a> Metadata<'a> {
     /// Create a string attribute
-    pub fn new_string(ctx: &'a Context<'a>, k: impl AsRef<str>) -> Result<Metadata<'a>, Error> {
+    pub fn new_string(ctx: &Context<'a>, k: impl AsRef<str>) -> Result<Metadata<'a>, Error> {
         let k = k.as_ref();
         unsafe {
             Ok(Metadata(Value::from_inner(
@@ -35,7 +35,7 @@ impl<'a> Metadata<'a> {
 
     /// Create an enum attribute
     pub fn new_node(
-        ctx: &'a Context<'a>,
+        ctx: &Context<'a>,
         mds: impl AsRef<[Metadata<'a>]>,
     ) -> Result<Metadata<'a>, Error> {
         let mut ptr: Vec<*mut llvm::LLVMOpaqueMetadata> = mds

@@ -1,7 +1,7 @@
 use crate::*;
 
 /// A `Builder` is used to create `Instruction`s
-pub struct Builder<'a>(NonNull<llvm::LLVMBuilder>, &'a Context<'a>);
+pub struct Builder<'a>(NonNull<llvm::LLVMBuilder>, Context<'a>);
 
 llvm_inner_impl!(Builder<'a>, llvm::LLVMBuilder);
 
@@ -41,14 +41,14 @@ macro_rules! op {
 
 impl<'a> Builder<'a> {
     /// Create a new builder
-    pub fn new(ctx: &'a Context<'a>) -> Result<Builder<'a>, Error> {
+    pub fn new(ctx: &Context<'a>) -> Result<Builder<'a>, Error> {
         let b = unsafe { wrap_inner(llvm::core::LLVMCreateBuilderInContext(ctx.llvm()))? };
-        Ok(Builder(b, ctx))
+        Ok(Builder(b, ctx.clone().clone()))
     }
 
     /// Get the builder's context
-    pub fn context(&self) -> &'a Context<'a> {
-        self.1
+    pub fn context(&self) -> &Context<'a> {
+        &self.1
     }
 
     pub fn position_at_end(&self, block: &BasicBlock<'a>) {

@@ -21,6 +21,12 @@ impl<'a> Drop for Context<'a> {
 
 static INIT: std::sync::Once = std::sync::Once::new();
 
+impl<'a> Clone for Context<'a> {
+    fn clone(&self) -> Context<'a> {
+        Context(self.0.clone(), false, PhantomData)
+    }
+}
+
 impl<'a> Context<'a> {
     fn init() {
         INIT.call_once(|| unsafe {
@@ -70,10 +76,7 @@ impl<'a> Context<'a> {
 
     pub fn set_discard_value_names(&mut self, discard: bool) {
         unsafe {
-            llvm::core::LLVMContextSetDiscardValueNames(
-                self.llvm(),
-                if discard { 1 } else { 0 },
-            )
+            llvm::core::LLVMContextSetDiscardValueNames(self.llvm(), if discard { 1 } else { 0 })
         }
     }
 
@@ -89,11 +92,7 @@ impl<'a> Context<'a> {
     ) -> Result<BasicBlock<'a>, Error> {
         let name = cstr!(name.as_ref());
         let bb = unsafe {
-            llvm::core::LLVMInsertBasicBlockInContext(
-                self.llvm(),
-                bb.llvm(),
-                name.as_ptr(),
-            )
+            llvm::core::LLVMInsertBasicBlockInContext(self.llvm(), bb.llvm(), name.as_ptr())
         };
         BasicBlock::from_inner(bb)
     }
@@ -101,9 +100,7 @@ impl<'a> Context<'a> {
     pub fn md_kind_id(&self, name: impl AsRef<str>) -> u32 {
         let len = name.as_ref().len();
         let name = cstr!(name.as_ref());
-        unsafe {
-            llvm::core::LLVMGetMDKindIDInContext(self.llvm(), name.as_ptr(), len as u32)
-        }
+        unsafe { llvm::core::LLVMGetMDKindIDInContext(self.llvm(), name.as_ptr(), len as u32) }
     }
 
     pub fn enum_attribute_kind_for_name(&self, name: impl AsRef<str>) -> u32 {

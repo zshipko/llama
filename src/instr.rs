@@ -162,7 +162,7 @@ impl<'a> InstrAlloca<'a> {
 }
 
 impl<'a> InstrPhi<'a> {
-    pub fn add_incoming<'b>(&'b self, items: impl AsRef<[(&'b Value<'a>, &'b BasicBlock<'a>)]>) {
+    pub fn add_incoming(&self, items: impl AsRef<[(Value<'a>, BasicBlock<'a>)]>) {
         let mut values: Vec<*mut llvm::LLVMValue> =
             items.as_ref().iter().map(|(v, _)| v.llvm()).collect();
 

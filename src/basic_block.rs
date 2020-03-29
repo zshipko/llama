@@ -1,6 +1,7 @@
 use crate::*;
 
 /// BasicBlock wraps LLVMBasicBlock
+#[derive(Copy)]
 pub struct BasicBlock<'a>(NonNull<llvm::LLVMBasicBlock>, PhantomData<&'a ()>);
 
 llvm_inner_impl!(BasicBlock<'a>, llvm::LLVMBasicBlock);
@@ -19,8 +20,7 @@ impl<'a> BasicBlock<'a> {
     /// Create a new basic block
     pub fn new(ctx: &'a Context, name: impl AsRef<str>) -> Result<Self, Error> {
         let name = cstr!(name.as_ref());
-        let bb =
-            unsafe { llvm::core::LLVMCreateBasicBlockInContext(ctx.llvm(), name.as_ptr()) };
+        let bb = unsafe { llvm::core::LLVMCreateBasicBlockInContext(ctx.llvm(), name.as_ptr()) };
         Self::from_inner(bb)
     }
 
@@ -37,11 +37,7 @@ impl<'a> BasicBlock<'a> {
     ) -> Result<Self, Error> {
         let name = cstr!(name.as_ref());
         let bb = unsafe {
-            llvm::core::LLVMAppendBasicBlockInContext(
-                ctx.llvm(),
-                f.as_ref().llvm(),
-                name.as_ptr(),
-            )
+            llvm::core::LLVMAppendBasicBlockInContext(ctx.llvm(), f.as_ref().llvm(), name.as_ptr())
         };
         Self::from_inner(bb)
     }

@@ -1,5 +1,6 @@
 use crate::*;
 
+#[derive(Clone, Copy)]
 pub struct Metadata<'a>(pub(crate) Value<'a>);
 
 impl<'a> AsRef<Value<'a>> for Metadata<'a> {
@@ -35,7 +36,7 @@ impl<'a> Metadata<'a> {
     /// Create an enum attribute
     pub fn new_node(
         ctx: &'a Context<'a>,
-        mds: impl AsRef<[&'a Metadata<'a>]>,
+        mds: impl AsRef<[Metadata<'a>]>,
     ) -> Result<Metadata<'a>, Error> {
         let mut ptr: Vec<*mut llvm::LLVMOpaqueMetadata> = mds
             .as_ref()

@@ -122,7 +122,7 @@ impl<'a> Builder<'a> {
         self.position_at_end(&merge_bb);
 
         let phi = self.phi(then_.type_of()?, "ite")?;
-        phi.add_incoming(&[(&then_, &new_then_bb), (&else_, &new_else_bb)]);
+        phi.add_incoming(&[(then_, new_then_bb), (else_, new_else_bb)]);
         Ok(phi)
     }
 
@@ -153,7 +153,7 @@ impl<'a> Builder<'a> {
         self.position_at_end(&loop_bb);
 
         let var = self.phi(start.type_of()?, "x")?;
-        var.add_incoming(&[(start, &preheader_bb)]);
+        var.add_incoming(&[(*start, preheader_bb)]);
 
         let _body = f(var.as_ref())?;
 
@@ -166,7 +166,7 @@ impl<'a> Builder<'a> {
         self.cond_br(cond, &loop_bb, &after_bb)?;
         self.position_at_end(&after_bb);
 
-        var.add_incoming(&[(&next_var, &loop_end_bb)]);
+        var.add_incoming(&[(next_var, loop_end_bb)]);
         Ok(_body.into())
     }
 
@@ -858,7 +858,7 @@ impl<'a> Builder<'a> {
         )
     });
 
-    instr!(InstrPhi: phi(&self, ty: impl AsRef<Type<'a>>, name: impl AsRef<str>) {
+    instr!(InstrPhi: phi(&self, ty: impl AsRef<Type<'a>>,  name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
         llvm::core::LLVMBuildPhi(
             self.llvm(),

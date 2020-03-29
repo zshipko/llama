@@ -255,7 +255,7 @@ impl<'a> FuncType<'a> {
 impl<'a> StructType<'a> {
     pub fn new(
         ctx: &'a Context,
-        fields: impl AsRef<[&'a Type<'a>]>,
+        fields: impl AsRef<[Type<'a>]>,
         packed: bool,
     ) -> Result<StructType<'a>, Error> {
         let mut fields: Vec<*mut llvm::LLVMType> =
@@ -272,7 +272,7 @@ impl<'a> StructType<'a> {
         Type::from_inner(t)?.into_struct_type()
     }
 
-    pub fn new_named(ctx: &'a Context, name: impl AsRef<str>) -> Result<StructType<'a>, Error> {
+    pub fn new_with_name(ctx: &'a Context, name: impl AsRef<str>) -> Result<StructType<'a>, Error> {
         let name = cstr!(name.as_ref());
         let t = unsafe { llvm::core::LLVMStructCreateNamed(ctx.llvm(), name.as_ptr()) };
         Type::from_inner(t)?.into_struct_type()
@@ -287,7 +287,7 @@ impl<'a> StructType<'a> {
         }
     }
 
-    pub fn set_body<'b>(&'b mut self, fields: impl AsRef<[&'b Type<'a>]>, packed: bool) {
+    pub fn set_body(&mut self, fields: impl AsRef<[Type<'a>]>, packed: bool) {
         let mut fields: Vec<*mut llvm::LLVMType> =
             fields.as_ref().iter().map(|x| x.llvm()).collect();
         let len = fields.len();

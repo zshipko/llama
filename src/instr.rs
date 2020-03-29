@@ -1,5 +1,6 @@
 use crate::*;
 
+#[derive(Copy)]
 pub struct Instruction<'a>(pub(crate) Value<'a>);
 
 impl<'a> AsRef<Value<'a>> for Instruction<'a> {
@@ -21,9 +22,7 @@ impl<'a> Instruction<'a> {
 
     pub fn parent(&self) -> Result<BasicBlock<'a>, Error> {
         unsafe {
-            BasicBlock::from_inner(llvm::core::LLVMGetInstructionParent(
-                self.as_ref().llvm(),
-            ))
+            BasicBlock::from_inner(llvm::core::LLVMGetInstructionParent(self.as_ref().llvm()))
         }
     }
 
@@ -123,11 +122,7 @@ impl<'a> Instruction<'a> {
     }
 
     pub fn call_function_type(&self) -> Result<Type<'a>, Error> {
-        unsafe {
-            Type::from_inner(llvm::core::LLVMGetCalledFunctionType(
-                self.as_ref().llvm(),
-            ))
-        }
+        unsafe { Type::from_inner(llvm::core::LLVMGetCalledFunctionType(self.as_ref().llvm())) }
     }
 
     pub fn call_value(&self) -> Result<Value<'a>, Error> {
@@ -156,13 +151,7 @@ impl<'a> Instruction<'a> {
     }
 
     pub fn terminator_set_successor(&mut self, index: usize, bb: &BasicBlock<'a>) {
-        unsafe {
-            llvm::core::LLVMSetSuccessor(
-                self.as_ref().llvm(),
-                index as c_uint,
-                bb.llvm(),
-            )
-        }
+        unsafe { llvm::core::LLVMSetSuccessor(self.as_ref().llvm(), index as c_uint, bb.llvm()) }
     }
 
     pub fn terminator_is_conditional(&self, index: usize) -> Result<BasicBlock<'a>, Error> {
@@ -179,26 +168,18 @@ impl<'a> Instruction<'a> {
     }
 
     pub fn terminator_set_condition(&mut self, cond: impl AsRef<Value<'a>>) {
-        unsafe {
-            llvm::core::LLVMSetCondition(self.as_ref().llvm(), cond.as_ref().llvm())
-        }
+        unsafe { llvm::core::LLVMSetCondition(self.as_ref().llvm(), cond.as_ref().llvm()) }
     }
 
     pub fn switch_default_dest(&self) -> Result<BasicBlock<'a>, Error> {
         unsafe {
-            BasicBlock::from_inner(llvm::core::LLVMGetSwitchDefaultDest(
-                self.as_ref().llvm(),
-            ))
+            BasicBlock::from_inner(llvm::core::LLVMGetSwitchDefaultDest(self.as_ref().llvm()))
         }
     }
 
     pub fn switch_add_case(&self, on_val: impl AsRef<Value<'a>>, dest: &BasicBlock<'a>) {
         unsafe {
-            llvm::core::LLVMAddCase(
-                self.as_ref().llvm(),
-                on_val.as_ref().llvm(),
-                dest.llvm(),
-            )
+            llvm::core::LLVMAddCase(self.as_ref().llvm(), on_val.as_ref().llvm(), dest.llvm())
         }
     }
 
@@ -220,9 +201,7 @@ impl<'a> Instruction<'a> {
     }
 
     pub fn set_metadata(&self, id: u32, meta: &Metadata<'a>) {
-        unsafe {
-            llvm::core::LLVMSetMetadata(self.as_ref().llvm(), id, meta.as_ref().llvm())
-        }
+        unsafe { llvm::core::LLVMSetMetadata(self.as_ref().llvm(), id, meta.as_ref().llvm()) }
     }
 }
 
@@ -230,8 +209,7 @@ impl<'a> Clone for Instruction<'a> {
     fn clone(&self) -> Instruction<'a> {
         unsafe {
             Instruction(
-                Value::from_inner(llvm::core::LLVMInstructionClone(self.as_ref().llvm()))
-                    .unwrap(),
+                Value::from_inner(llvm::core::LLVMInstructionClone(self.as_ref().llvm())).unwrap(),
             )
         }
     }

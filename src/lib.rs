@@ -288,7 +288,7 @@ mod tests {
 
         let i32 = Type::int(&context, 32)?;
 
-        let ft = FuncType::new(&i32, &[&i32, &i32], false)?;
+        let ft = FuncType::new(i32, &[i32, i32], false)?;
         module.declare_function(&builder, "testing", &ft, |f| {
             let params = f.params();
             let a = builder.add(&params[0], &params[1], "a")?;
@@ -299,9 +299,9 @@ mod tests {
 
         let engine = ExecutionEngine::new_mcjit(&module, 2)?;
 
-        let testing: unsafe extern "C" fn(i32, i32) -> i32 = engine.function("testing")?;
+        let testing: extern "C" fn(i32, i32) -> i32 = unsafe { engine.function("testing")? };
 
-        let x: i32 = unsafe { testing(1i32, 2i32) };
+        let x: i32 = testing(1i32, 2i32);
         assert_eq!(x, 3);
 
         Codegen::new(&module, &["testing"], true)?;
@@ -316,17 +316,17 @@ mod tests {
         let builder = Builder::new(&ctx)?;
 
         let f32 = Type::float(&ctx)?;
-        let ft = FuncType::new(&f32, &[&f32], false)?;
+        let ft = FuncType::new(f32, &[f32], false)?;
         module.declare_function(&builder, "testing", &ft, |f| {
             let params = f.params();
             let cond = builder.fcmp(
                 FCmp::LLVMRealULT,
                 &params[0],
-                Const::real(&f32, 10.0)?,
+                Const::real(f32, 10.0)?,
                 "cond",
             )?;
-            let a = Const::real(&f32, 1.0)?;
-            let b = Const::real(&f32, 2.0)?;
+            let a = Const::real(f32, 1.0)?;
+            let b = Const::real(f32, 2.0)?;
             let ite = builder.if_then_else(cond, |_| Ok(a), |_| Ok(b))?;
             builder.ret(ite)
         })?;
@@ -335,9 +335,9 @@ mod tests {
 
         {
             let engine = ExecutionEngine::new(&module)?;
-            let testing: unsafe extern "C" fn(f32) -> f32 = engine.function("testing")?;
-            let x = unsafe { testing(11.0) };
-            let y = unsafe { testing(9.0) };
+            let testing: extern "C" fn(f32) -> f32 = unsafe { engine.function("testing")? };
+            let x = testing(11.0);
+            let y = testing(9.0);
 
             assert_eq!(x, 2.0);
             assert_eq!(y, 1.0);
@@ -352,33 +352,34 @@ mod tests {
     fn for_loop() -> Result<(), Error> {
         let ctx = Context::new()?;
         let mut module = Module::new(&ctx, "test_for_loop")?;
-        let builder = Builder::new(&ctx)?;
+        let build = Builder::new(&ctx)?;
 
         let i64 = Type::int(&ctx, 64)?;
-        let ft = FuncType::new(&i64, &[&i64], false)?;
-        module.declare_function(&builder, "testing", &ft, |f| {
+
+        let ft = FuncType::new(i64, &[i64], false)?;
+        module.declare_function(&build, "testing", &ft, |f| {
             let params = f.params();
-            let one = Const::int(&i64, 1, true)?;
-            let f = builder.for_loop(
+            let one = Const::int(i64, 1, true)?;
+            let f = build.for_loop(
                 Const::int(&i64, 0, true)?,
-                |x| builder.add(x, one, "add"),
-                |x| builder.icmp(ICmp::LLVMIntSLT, x, &params[0], "cond"),
-                |_| Const::int(&i64, 0, true),
+                |x| build.icmp(ICmp::LLVMIntSLT, x, &params[0], "cond"),
+                |x| build.add(x, one, "add"),
+                |x| Ok(*x),
             )?;
-            builder.ret(f)
+            build.ret(f)
         })?;
 
         println!("{}", module);
 
         {
             let engine = ExecutionEngine::new(&module)?;
-            let testing: unsafe extern "C" fn(i64) -> i64 = engine.function("testing")?;
-            let x = unsafe { testing(10) };
+            let testing: extern "C" fn(i64) -> i64 = unsafe { engine.function("testing")? };
+            let x = testing(10);
 
             println!("{}", x);
             assert_eq!(x, 9);
 
-            let x = unsafe { testing(100) };
+            let x = testing(100);
             assert_eq!(x, 99);
         }
 

@@ -7,6 +7,7 @@ llvm_inner_impl!(Type<'a>, llvm::LLVMType);
 
 pub type TypeKind = llvm::LLVMTypeKind;
 
+#[derive(Clone, Copy)]
 pub struct FuncType<'a>(pub(crate) Type<'a>);
 
 impl<'a> Clone for Type<'a> {
@@ -33,6 +34,7 @@ impl<'a> From<FuncType<'a>> for Type<'a> {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct StructType<'a>(pub(crate) Type<'a>);
 
 impl<'a> AsRef<Type<'a>> for StructType<'a> {
@@ -207,7 +209,7 @@ impl<'a> Type<'a> {
 impl<'a> FuncType<'a> {
     pub fn new(
         return_type: impl AsRef<Type<'a>>,
-        params: impl AsRef<[&'a Type<'a>]>,
+        params: impl AsRef<[Type<'a>]>,
         var_arg: bool,
     ) -> Result<FuncType<'a>, Error> {
         let mut params: Vec<*mut llvm::LLVMType> =

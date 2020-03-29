@@ -1,6 +1,8 @@
 use crate::*;
 
+#[derive(Clone, Copy)]
 pub struct Const<'a>(pub(crate) Value<'a>);
+
 impl<'a> AsRef<Value<'a>> for Const<'a> {
     fn as_ref(&self) -> &Value<'a> {
         &self.0
@@ -86,11 +88,7 @@ impl<'a> Const<'a> {
             return None;
         }
 
-        unsafe {
-            Some(llvm::core::LLVMConstIntGetZExtValue(
-                self.as_ref().llvm(),
-            ))
-        }
+        unsafe { Some(llvm::core::LLVMConstIntGetZExtValue(self.as_ref().llvm())) }
     }
 
     pub fn get_signed_int(&self) -> Option<i64> {
@@ -98,11 +96,7 @@ impl<'a> Const<'a> {
             return None;
         }
 
-        unsafe {
-            Some(llvm::core::LLVMConstIntGetSExtValue(
-                self.as_ref().llvm(),
-            ))
-        }
+        unsafe { Some(llvm::core::LLVMConstIntGetSExtValue(self.as_ref().llvm())) }
     }
 
     pub fn get_double(&self) -> Option<f64> {
@@ -137,12 +131,11 @@ impl<'a> Const<'a> {
 
     pub fn crate_struct(
         ctx: &'a Context,
-        vals: impl AsRef<[&'a Value<'a>]>,
+        vals: impl AsRef<[Value<'a>]>,
         packed: bool,
     ) -> Result<Const<'a>, Error> {
         let len = vals.as_ref().len();
-        let mut vals: Vec<*mut llvm::LLVMValue> =
-            vals.as_ref().iter().map(|x| x.llvm()).collect();
+        let mut vals: Vec<*mut llvm::LLVMValue> = vals.as_ref().iter().map(|x| x.llvm()).collect();
         let v = unsafe {
             llvm::core::LLVMConstStructInContext(
                 ctx.llvm(),
@@ -156,38 +149,31 @@ impl<'a> Const<'a> {
 
     pub fn create_named_struct(
         t: impl AsRef<Type<'a>>,
-        vals: impl AsRef<[&'a Value<'a>]>,
+        vals: impl AsRef<[Value<'a>]>,
     ) -> Result<Const<'a>, Error> {
         let len = vals.as_ref().len();
-        let mut vals: Vec<*mut llvm::LLVMValue> =
-            vals.as_ref().iter().map(|x| x.llvm()).collect();
+        let mut vals: Vec<*mut llvm::LLVMValue> = vals.as_ref().iter().map(|x| x.llvm()).collect();
         let v = unsafe {
-            llvm::core::LLVMConstNamedStruct(
-                t.as_ref().llvm(),
-                vals.as_mut_ptr(),
-                len as c_uint,
-            )
+            llvm::core::LLVMConstNamedStruct(t.as_ref().llvm(), vals.as_mut_ptr(), len as c_uint)
         };
         Value::from_inner(v)?.into_const()
     }
 
     pub fn create_array(
         t: impl AsRef<Type<'a>>,
-        vals: impl AsRef<[&'a Value<'a>]>,
+        vals: impl AsRef<[Value<'a>]>,
     ) -> Result<Const<'a>, Error> {
         let len = vals.as_ref().len();
-        let mut vals: Vec<*mut llvm::LLVMValue> =
-            vals.as_ref().iter().map(|x| x.llvm()).collect();
+        let mut vals: Vec<*mut llvm::LLVMValue> = vals.as_ref().iter().map(|x| x.llvm()).collect();
         let v = unsafe {
             llvm::core::LLVMConstArray(t.as_ref().llvm(), vals.as_mut_ptr(), len as c_uint)
         };
         Value::from_inner(v)?.into_const()
     }
 
-    pub fn create_vector(vals: impl AsRef<[&'a Value<'a>]>) -> Result<Const<'a>, Error> {
+    pub fn create_vector(vals: impl AsRef<[Value<'a>]>) -> Result<Const<'a>, Error> {
         let len = vals.as_ref().len();
-        let mut vals: Vec<*mut llvm::LLVMValue> =
-            vals.as_ref().iter().map(|x| x.llvm()).collect();
+        let mut vals: Vec<*mut llvm::LLVMValue> = vals.as_ref().iter().map(|x| x.llvm()).collect();
         let v = unsafe { llvm::core::LLVMConstVector(vals.as_mut_ptr(), len as c_uint) };
         Value::from_inner(v)?.into_const()
     }
@@ -197,9 +183,7 @@ impl<'a> Const<'a> {
     }
 
     pub fn neg(&self) -> Result<Const<'a>, Error> {
-        unsafe {
-            Value::from_inner(llvm::core::LLVMConstNeg(self.as_ref().llvm()))?.into_const()
-        }
+        unsafe { Value::from_inner(llvm::core::LLVMConstNeg(self.as_ref().llvm()))?.into_const() }
     }
 
     pub fn nsw_neg(&self) -> Result<Const<'a>, Error> {
@@ -215,14 +199,11 @@ impl<'a> Const<'a> {
     }
 
     pub fn fneg(&self) -> Result<Const<'a>, Error> {
-        unsafe {
-            Value::from_inner(llvm::core::LLVMConstFNeg(self.as_ref().llvm()))?.into_const()
-        }
+        unsafe { Value::from_inner(llvm::core::LLVMConstFNeg(self.as_ref().llvm()))?.into_const() }
     }
 
     pub fn not(&self) -> Result<Const<'a>, Error> {
-        unsafe { Value::from_inner(llvm::core::LLVMConstNot(self.as_ref().llvm())) }?
-            .into_const()
+        unsafe { Value::from_inner(llvm::core::LLVMConstNot(self.as_ref().llvm())) }?.into_const()
     }
 
     pub fn add(&self, other: &Const<'a>) -> Result<Const<'a>, Error> {
@@ -507,7 +488,7 @@ impl<'a> Const<'a> {
         }
     }
 
-    pub fn gep(&self, i: impl AsRef<[&'a Value<'a>]>) -> Result<Const<'a>, Error> {
+    pub fn gep(&self, i: impl AsRef<[Value<'a>]>) -> Result<Const<'a>, Error> {
         let len = i.as_ref().len();
         let mut i: Vec<*mut llvm::LLVMValue> = i.as_ref().iter().map(|x| x.llvm()).collect();
         unsafe {
@@ -523,7 +504,7 @@ impl<'a> Const<'a> {
     pub fn gep2(
         &self,
         t: impl AsRef<Type<'a>>,
-        i: impl AsRef<[&'a Value<'a>]>,
+        i: impl AsRef<[Value<'a>]>,
     ) -> Result<Const<'a>, Error> {
         let len = i.as_ref().len();
         let mut i: Vec<*mut llvm::LLVMValue> = i.as_ref().iter().map(|x| x.llvm()).collect();
@@ -538,7 +519,7 @@ impl<'a> Const<'a> {
         }
     }
 
-    pub fn in_bounds_gep(&self, i: impl AsRef<[&'a Value<'a>]>) -> Result<Const<'a>, Error> {
+    pub fn in_bounds_gep(&self, i: impl AsRef<[Value<'a>]>) -> Result<Const<'a>, Error> {
         let len = i.as_ref().len();
         let mut i: Vec<*mut llvm::LLVMValue> = i.as_ref().iter().map(|x| x.llvm()).collect();
         unsafe {
@@ -554,7 +535,7 @@ impl<'a> Const<'a> {
     pub fn in_bounds_gep2(
         &self,
         t: impl AsRef<Type<'a>>,
-        i: impl AsRef<[&'a Value<'a>]>,
+        i: impl AsRef<[Value<'a>]>,
     ) -> Result<Const<'a>, Error> {
         let len = i.as_ref().len();
         let mut i: Vec<*mut llvm::LLVMValue> = i.as_ref().iter().map(|x| x.llvm()).collect();

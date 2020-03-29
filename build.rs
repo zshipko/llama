@@ -48,7 +48,6 @@ fn main() {
     // Copy LLVM lib
     let llvm_file_name = format!("libLLVM.{}", shared_lib);
     let out_file = out_dir.join(&llvm_file_name);
-
     std::fs::copy(prefix.join("lib").join(&llvm_file_name), &out_file).unwrap();
 
     #[cfg(target_os = "macos")]

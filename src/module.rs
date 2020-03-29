@@ -32,7 +32,7 @@ impl<'a> Module<'a> {
         Ok(Module(m, PhantomData))
     }
 
-    pub fn context(&self) -> Result<Context, Error> {
+    pub fn context(&'a self) -> Result<Context<'a>, Error> {
         let ctx = unsafe { wrap_inner(llvm::core::LLVMGetModuleContext(self.llvm()))? };
         Ok(Context(ctx, false, PhantomData))
     }
@@ -169,11 +169,11 @@ impl<'a> Module<'a> {
         &mut self,
         name: impl AsRef<str>,
         t: impl AsRef<Type<'a>>,
-    ) -> Result<Func<'a>, Error> {
+    ) -> Result<Value<'a>, Error> {
         let name = cstr!(name.as_ref());
         let value =
             unsafe { llvm::core::LLVMAddGlobal(self.llvm(), t.as_ref().llvm(), name.as_ptr()) };
-        Ok(Func(Value::from_inner(value)?))
+        Ok(Value::from_inner(value)?)
     }
 
     pub fn global_in_address_space(

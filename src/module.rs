@@ -146,7 +146,7 @@ impl<'a> Module<'a> {
     pub fn define_function(
         &mut self,
         name: impl AsRef<str>,
-        t: &FuncType,
+        t: FuncType,
     ) -> Result<Func<'a>, Error> {
         let name = cstr!(name.as_ref());
         let value =
@@ -158,11 +158,11 @@ impl<'a> Module<'a> {
         &mut self,
         builder: &Builder<'a>,
         name: impl AsRef<str>,
-        ft: &FuncType,
+        ft: FuncType,
         def: F,
     ) -> Result<Instr<'a>, Error> {
-        let f = self.define_function(name, &ft)?;
-        builder.function_body(&f, |_, _| def(&f))
+        let f = self.define_function(name, ft)?;
+        builder.function_body(f, |_, _| def(&f))
     }
 
     pub fn global(

@@ -60,11 +60,11 @@ impl<'a> Type<'a> {
         unsafe { Self::from_inner(llvm::core::LLVMGetTypeByName(module.llvm(), name.as_ptr())) }
     }
 
-    pub fn int_width(&self) -> usize {
+    pub fn int_width(self) -> usize {
         unsafe { llvm::core::LLVMGetIntTypeWidth(self.llvm()) as usize }
     }
 
-    pub fn context(&self) -> Result<Context, Error> {
+    pub fn context(self) -> Result<Context<'a>, Error> {
         let ctx = unsafe { wrap_inner(llvm::core::LLVMGetTypeContext(self.llvm()))? };
         Ok(Context(ctx, false, PhantomData))
     }
@@ -103,7 +103,7 @@ impl<'a> Type<'a> {
         Self::int(ctx, 1)
     }
 
-    pub fn is(&self, kind: TypeKind) -> bool {
+    pub fn is(self, kind: TypeKind) -> bool {
         self.kind() == kind
     }
 
@@ -143,7 +143,7 @@ impl<'a> Type<'a> {
         unsafe { Self::from_inner(llvm::core::LLVMFP128TypeInContext(ctx.llvm())) }
     }
 
-    pub fn element_type(&self) -> Result<Type<'a>, Error> {
+    pub fn element_type(self) -> Result<Type<'a>, Error> {
         let t = unsafe { llvm::core::LLVMGetElementType(self.llvm()) };
         Self::from_inner(t)
     }
@@ -164,40 +164,40 @@ impl<'a> Type<'a> {
         Ok(StructType(self))
     }
 
-    pub fn pointer(&self, address_space: Option<usize>) -> Result<Type<'a>, Error> {
+    pub fn pointer(self, address_space: Option<usize>) -> Result<Type<'a>, Error> {
         let address_space = address_space.unwrap_or(0) as c_uint;
         unsafe { Self::from_inner(llvm::core::LLVMPointerType(self.llvm(), address_space)) }
     }
 
-    pub fn vector(&self, count: usize) -> Result<Type<'a>, Error> {
+    pub fn vector(self, count: usize) -> Result<Type<'a>, Error> {
         unsafe { Self::from_inner(llvm::core::LLVMVectorType(self.llvm(), count as c_uint)) }
     }
 
-    pub fn array(&self, count: usize) -> Result<Type<'a>, Error> {
+    pub fn array(self, count: usize) -> Result<Type<'a>, Error> {
         unsafe { Self::from_inner(llvm::core::LLVMArrayType(self.llvm(), count as c_uint)) }
     }
 
-    pub fn kind(&self) -> TypeKind {
+    pub fn kind(self) -> TypeKind {
         unsafe { llvm::core::LLVMGetTypeKind(self.llvm()) }
     }
 
-    pub fn is_sized(&self) -> bool {
+    pub fn is_sized(self) -> bool {
         unsafe { llvm::core::LLVMTypeIsSized(self.llvm()) == 1 }
     }
 
-    pub fn array_len(&self) -> usize {
+    pub fn array_len(self) -> usize {
         unsafe { llvm::core::LLVMGetArrayLength(self.llvm()) as usize }
     }
 
-    pub fn vector_len(&self) -> usize {
+    pub fn vector_len(self) -> usize {
         unsafe { llvm::core::LLVMGetArrayLength(self.llvm()) as usize }
     }
 
-    pub fn pointer_address_space(&self) -> usize {
+    pub fn pointer_address_space(self) -> usize {
         unsafe { llvm::core::LLVMGetArrayLength(self.llvm()) as usize }
     }
 
-    pub fn align_of(&self) -> Result<Value<'a>, Error> {
+    pub fn align_of(self) -> Result<Value<'a>, Error> {
         unsafe { Value::from_inner(llvm::core::LLVMAlignOf(self.llvm())) }
     }
 
@@ -227,21 +227,21 @@ impl<'a> FuncType<'a> {
         x.into_func_type()
     }
 
-    pub fn is_var_arg(&self) -> bool {
+    pub fn is_var_arg(self) -> bool {
         unsafe { llvm::core::LLVMIsFunctionVarArg(self.as_ref().llvm()) == 1 }
     }
 
-    pub fn return_type(&self) -> Result<Type<'a>, Error> {
+    pub fn return_type(self) -> Result<Type<'a>, Error> {
         let t = unsafe { llvm::core::LLVMGetReturnType(self.as_ref().llvm()) };
         Type::from_inner(t)
     }
 
-    pub fn param_count(&self) -> usize {
+    pub fn param_count(self) -> usize {
         let n = unsafe { llvm::core::LLVMCountParamTypes(self.as_ref().llvm()) };
         n as usize
     }
 
-    pub fn params(&self) -> Vec<Type<'a>> {
+    pub fn params(self) -> Vec<Type<'a>> {
         let len = self.param_count();
         let mut data = vec![std::ptr::null_mut(); len];
 
@@ -281,7 +281,7 @@ impl<'a> StructType<'a> {
         Type::from_inner(t)?.into_struct_type()
     }
 
-    pub fn name(&self) -> Result<&str, Error> {
+    pub fn name(self) -> Result<&'a str, Error> {
         unsafe {
             let s = llvm::core::LLVMGetStructName(self.as_ref().llvm());
             let s = std::slice::from_raw_parts(s as *const u8, strlen(s));
@@ -304,12 +304,12 @@ impl<'a> StructType<'a> {
         };
     }
 
-    pub fn field_count(&self) -> usize {
+    pub fn field_count(self) -> usize {
         let n = unsafe { llvm::core::LLVMCountStructElementTypes(self.as_ref().llvm()) };
         n as usize
     }
 
-    pub fn fields(&self) -> Vec<Type<'a>> {
+    pub fn fields(self) -> Vec<Type<'a>> {
         let len = self.field_count();
         let mut ptr = std::ptr::null_mut();
 
@@ -321,22 +321,22 @@ impl<'a> StructType<'a> {
             .collect()
     }
 
-    pub fn field(&self, index: usize) -> Result<Type<'a>, Error> {
+    pub fn field(self, index: usize) -> Result<Type<'a>, Error> {
         let t =
             unsafe { llvm::core::LLVMStructGetTypeAtIndex(self.as_ref().llvm(), index as c_uint) };
 
         Type::from_inner(t)
     }
 
-    pub fn is_packed(&self) -> bool {
+    pub fn is_packed(self) -> bool {
         unsafe { llvm::core::LLVMIsPackedStruct(self.as_ref().llvm()) == 1 }
     }
 
-    pub fn is_opaque(&self) -> bool {
+    pub fn is_opaque(self) -> bool {
         unsafe { llvm::core::LLVMIsOpaqueStruct(self.as_ref().llvm()) == 1 }
     }
 
-    pub fn is_literal(&self) -> bool {
+    pub fn is_literal(self) -> bool {
         unsafe { llvm::core::LLVMIsLiteralStruct(self.as_ref().llvm()) == 1 }
     }
 }

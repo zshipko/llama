@@ -23,7 +23,7 @@ static INIT: std::sync::Once = std::sync::Once::new();
 
 impl<'a> Clone for Context<'a> {
     fn clone(&self) -> Context<'a> {
-        Context(self.0.clone(), false, PhantomData)
+        Context(self.0, false, PhantomData)
     }
 }
 
@@ -87,7 +87,7 @@ impl<'a> Context<'a> {
     /// Insert a new basic block
     pub fn insert_basic_block(
         &self,
-        bb: &BasicBlock<'a>,
+        bb: BasicBlock<'a>,
         name: impl AsRef<str>,
     ) -> Result<BasicBlock<'a>, Error> {
         let name = cstr!(name.as_ref());

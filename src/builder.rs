@@ -51,11 +51,11 @@ impl<'a> Builder<'a> {
         &self.1
     }
 
-    pub fn position_at_end(&self, block: &BasicBlock<'a>) {
+    pub fn position_at_end(&self, block: BasicBlock<'a>) {
         unsafe { llvm::core::LLVMPositionBuilderAtEnd(self.llvm(), block.llvm()) }
     }
 
-    pub fn position_before(&self, value: &Value<'a>) {
+    pub fn position_before(&self, value: Value<'a>) {
         unsafe { llvm::core::LLVMPositionBuilderBefore(self.llvm(), value.llvm()) }
     }
 
@@ -74,11 +74,11 @@ impl<'a> Builder<'a> {
         F: FnOnce(&Self, BasicBlock<'a>) -> Result<T, Error>,
     >(
         &self,
-        f: &Func<'a>,
+        f: Func<'a>,
         def: F,
     ) -> Result<Instr<'a>, Error> {
         let entry = BasicBlock::append(self.context(), f.as_ref(), "entry")?;
-        self.position_at_end(&entry);
+        self.position_at_end(entry);
         let v = def(self, entry)?;
         f.verify()?;
         Ok(Instr(v.into()))
@@ -100,28 +100,28 @@ impl<'a> Builder<'a> {
         let start_bb = self.insertion_block()?;
         let function = start_bb.parent()?;
         let then_bb = BasicBlock::append(&ctx, &function, "then")?;
-        self.position_at_end(&then_bb);
+        self.position_at_end(then_bb);
         let then_ = then_(self)?.into();
         let new_then_bb = self.insertion_block()?;
         let else_bb = BasicBlock::append(&ctx, &function, "else")?;
-        self.position_at_end(&else_bb);
+        self.position_at_end(else_bb);
         let else_ = else_(self)?.into();
         let new_else_bb = self.insertion_block()?;
         let merge_bb = BasicBlock::append(&ctx, &function, "ifcont")?;
-        self.position_at_end(&merge_bb);
+        self.position_at_end(merge_bb);
 
-        self.position_at_end(&start_bb);
-        self.cond_br(cond, &then_bb, &else_bb)?;
+        self.position_at_end(start_bb);
+        self.cond_br(cond, then_bb, else_bb)?;
 
-        self.position_at_end(&new_then_bb);
-        self.br(&merge_bb)?;
+        self.position_at_end(new_then_bb);
+        self.br(merge_bb)?;
 
-        self.position_at_end(&new_else_bb);
-        self.br(&merge_bb)?;
+        self.position_at_end(new_else_bb);
+        self.br(merge_bb)?;
 
-        self.position_at_end(&merge_bb);
+        self.position_at_end(merge_bb);
 
-        let phi = self.phi(then_.type_of()?, "ite")?;
+        let mut phi = self.phi(then_.type_of()?, "ite")?;
         phi.add_incoming(&[(then_, new_then_bb), (else_, new_else_bb)]);
         Ok(phi)
     }
@@ -149,10 +149,10 @@ impl<'a> Builder<'a> {
         let function = preheader_bb.parent()?;
         let loop_bb = BasicBlock::append(&ctx, &function, "loop")?;
 
-        self.br(&loop_bb)?;
-        self.position_at_end(&loop_bb);
+        self.br(loop_bb)?;
+        self.position_at_end(loop_bb);
 
-        let var = self.phi(start.type_of()?, "x")?;
+        let mut var = self.phi(start.type_of()?, "x")?;
         var.add_incoming(&[(*start, preheader_bb)]);
 
         let _body = f(var.as_ref())?;
@@ -163,8 +163,8 @@ impl<'a> Builder<'a> {
 
         let loop_end_bb = self.insertion_block()?;
         let after_bb = BasicBlock::append(&ctx, &function, "after")?;
-        self.cond_br(cond, &loop_bb, &after_bb)?;
-        self.position_at_end(&after_bb);
+        self.cond_br(cond, loop_bb, after_bb)?;
+        self.position_at_end(after_bb);
 
         var.add_incoming(&[(next_var, loop_end_bb)]);
         Ok(_body.into())
@@ -191,15 +191,15 @@ impl<'a> Builder<'a> {
         llvm::core::LLVMBuildAggregateRet(self.llvm(), ptr, len as u32)
     });
 
-    instr!(br(&self, bb: &BasicBlock<'a>) {
+    instr!(br(&self, bb: BasicBlock<'a>) {
         llvm::core::LLVMBuildBr(self.llvm(), bb.llvm())
     });
 
-    instr!(cond_br(&self, if_: impl AsRef<Value<'a>>,  then_: &BasicBlock<'a>, else_: &BasicBlock<'a>) {
+    instr!(cond_br(&self, if_: impl AsRef<Value<'a>>,  then_: BasicBlock<'a>, else_: BasicBlock<'a>) {
         llvm::core::LLVMBuildCondBr(self.llvm(), if_.as_ref().llvm(), then_.llvm(), else_.llvm())
     });
 
-    instr!(InstrSwitch: switch(&self, v: impl AsRef<Value<'a>>, bb: &BasicBlock<'a>, num_cases: usize) {
+    instr!(InstrSwitch: switch(&self, v: impl AsRef<Value<'a>>, bb: BasicBlock<'a>, num_cases: usize) {
         llvm::core::LLVMBuildSwitch(self.llvm(), v.as_ref().llvm(), bb.llvm(), num_cases as c_uint)
     });
 
@@ -207,13 +207,13 @@ impl<'a> Builder<'a> {
         llvm::core::LLVMBuildIndirectBr(self.llvm(), addr.as_ref().llvm(), num_dests as c_uint)
     });
 
-    instr!(InstrCall: invoke(&self, f: impl AsRef<Value<'a>>, args: impl AsRef<[Value<'a>]>, then: &BasicBlock<'a>, catch: &BasicBlock<'a>, name: impl AsRef<str>) {
+    instr!(InstrCall: invoke(&self, f: impl AsRef<Value<'a>>, args: impl AsRef<[Value<'a>]>, then: BasicBlock<'a>, catch: BasicBlock<'a>, name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
         let mut args: Vec<*mut llvm::LLVMValue> = args.as_ref().iter().map(|x| x.llvm()).collect();
         llvm::core::LLVMBuildInvoke(self.llvm(), f.as_ref().llvm(), args.as_mut_ptr(), args.len() as c_uint, then.llvm(), catch.llvm(), name.as_ptr())
     });
 
-    instr!(InstrCall: invoke2(&self, t: impl AsRef<Type<'a>>, f: impl AsRef<Value<'a>>, args: impl AsRef<[Value<'a>]>, then: &BasicBlock<'a>, catch: &BasicBlock<'a>, name: impl AsRef<str>) {
+    instr!(InstrCall: invoke2(&self, t: impl AsRef<Type<'a>>, f: impl AsRef<Value<'a>>, args: impl AsRef<[Value<'a>]>, then: BasicBlock<'a>, catch: BasicBlock<'a>, name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
         let mut args: Vec<*mut llvm::LLVMValue> = args.as_ref().iter().map(|x| x.llvm()).collect();
         llvm::core::LLVMBuildInvoke2(self.llvm(), t.as_ref().llvm(), f.as_ref().llvm(), args.as_mut_ptr(), args.len() as c_uint, then.llvm(), catch.llvm(), name.as_ptr())

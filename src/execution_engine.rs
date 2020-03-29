@@ -90,6 +90,11 @@ impl<'a> ExecutionEngine<'a> {
         Ok(ExecutionEngine(wrap_inner(engine)?, PhantomData))
     }
 
+    /// Get a function from within the execution engine
+    ///
+    /// # Safety
+    /// This function does nothing to ensure that the function actually matches the type you give
+    /// it
     pub unsafe fn function<T: Copy>(&self, name: impl AsRef<str>) -> Result<T, Error> {
         let name = cstr!(name.as_ref());
         let ptr = llvm::execution_engine::LLVMGetFunctionAddress(self.llvm(), name.as_ptr());
@@ -97,6 +102,11 @@ impl<'a> ExecutionEngine<'a> {
         Ok(std::mem::transmute_copy(&(ptr as *mut c_void)))
     }
 
+    /// Get a pointer to a global value from within the execution engine
+    ///
+    /// # Safety
+    /// This function does nothing to ensure that the function actually matches the type you give
+    /// it
     pub unsafe fn global_value<T>(&self, name: impl AsRef<str>) -> Result<Value<'a>, Error> {
         let name = cstr!(name.as_ref());
         let ptr = llvm::execution_engine::LLVMGetGlobalValueAddress(self.llvm(), name.as_ptr())
@@ -104,6 +114,11 @@ impl<'a> ExecutionEngine<'a> {
         Value::from_inner(ptr)
     }
 
+    /// Get a pointer to a global from within the execution engine
+    ///
+    /// # Safety
+    /// This function does nothing to ensure that the function actually matches the type you give
+    /// it
     pub unsafe fn global<T>(&self, global: impl AsRef<Value<'a>>) -> Result<&mut T, Error> {
         let ptr =
             llvm::execution_engine::LLVMGetPointerToGlobal(self.llvm(), global.as_ref().llvm());
@@ -123,12 +138,14 @@ impl<'a> ExecutionEngine<'a> {
         unsafe { llvm::execution_engine::LLVMAddModule(self.llvm(), module.llvm()) }
     }
 
-    pub unsafe fn add_global_mapping<T>(&mut self, global: impl AsRef<Value<'a>>, data: &'a T) {
-        llvm::execution_engine::LLVMAddGlobalMapping(
-            self.llvm(),
-            global.as_ref().llvm(),
-            data as *const T as *mut c_void,
-        )
+    pub fn add_global_mapping<T>(&mut self, global: impl AsRef<Value<'a>>, data: &'a T) {
+        unsafe {
+            llvm::execution_engine::LLVMAddGlobalMapping(
+                self.llvm(),
+                global.as_ref().llvm(),
+                data as *const T as *mut c_void,
+            )
+        }
     }
 
     pub fn target_data(&self) -> Result<TargetData, Error> {

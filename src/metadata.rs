@@ -53,7 +53,7 @@ impl<'a> Metadata<'a> {
         }
     }
 
-    pub fn as_str(&self) -> Result<&str, Error> {
+    pub fn as_str(self) -> Result<&'a str, Error> {
         unsafe {
             let mut len = 0;
             let ptr = llvm::core::LLVMGetMDString(self.as_ref().llvm(), &mut len);
@@ -67,7 +67,7 @@ impl<'a> Metadata<'a> {
         }
     }
 
-    pub fn node(&self) -> Vec<Metadata<'a>> {
+    pub fn node(self) -> Vec<Metadata<'a>> {
         unsafe {
             let len = llvm::core::LLVMGetMDNodeNumOperands(self.as_ref().llvm());
             let mut a = vec![std::ptr::null_mut(); len as usize];

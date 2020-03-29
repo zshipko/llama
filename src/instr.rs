@@ -57,13 +57,13 @@ impl<'a> Instr<'a> {
         Ok(Instr(Value::from_inner(ptr)?))
     }
 
-    pub fn parent(&self) -> Result<BasicBlock<'a>, Error> {
+    pub fn parent(self) -> Result<BasicBlock<'a>, Error> {
         unsafe {
             BasicBlock::from_inner(llvm::core::LLVMGetInstructionParent(self.as_ref().llvm()))
         }
     }
 
-    pub fn next_instruction(&self) -> Result<Instr<'a>, Error> {
+    pub fn next_instruction(self) -> Result<Instr<'a>, Error> {
         unsafe {
             Ok(Instr(Value::from_inner(
                 llvm::core::LLVMGetNextInstruction(self.as_ref().llvm()),
@@ -71,7 +71,7 @@ impl<'a> Instr<'a> {
         }
     }
 
-    pub fn prev_instruction(&self) -> Result<Instr<'a>, Error> {
+    pub fn prev_instruction(self) -> Result<Instr<'a>, Error> {
         unsafe {
             Ok(Instr(Value::from_inner(
                 llvm::core::LLVMGetPreviousInstruction(self.as_ref().llvm()),
@@ -83,19 +83,19 @@ impl<'a> Instr<'a> {
         unsafe { llvm::core::LLVMInstructionEraseFromParent(self.as_ref().llvm()) }
     }
 
-    pub fn remove_from_parent(&self) {
+    pub fn remove_from_parent(self) {
         unsafe { llvm::core::LLVMInstructionRemoveFromParent(self.as_ref().llvm()) }
     }
 
-    pub fn opcode(&self) -> OpCode {
+    pub fn opcode(self) -> OpCode {
         unsafe { llvm::core::LLVMGetInstructionOpcode(self.as_ref().llvm()) }
     }
 
-    pub fn has_metadata(&self) -> bool {
+    pub fn has_metadata(self) -> bool {
         unsafe { llvm::core::LLVMHasMetadata(self.as_ref().llvm()) == 1 }
     }
 
-    pub fn get_metadata(&self, id: u32) -> Result<Metadata<'a>, Error> {
+    pub fn get_metadata(self, id: u32) -> Result<Metadata<'a>, Error> {
         unsafe {
             Ok(Metadata(Value::from_inner(llvm::core::LLVMGetMetadata(
                 self.as_ref().llvm(),
@@ -104,15 +104,15 @@ impl<'a> Instr<'a> {
         }
     }
 
-    pub fn set_metadata(&self, id: u32, meta: &Metadata<'a>) {
+    pub fn set_metadata(self, id: u32, meta: Metadata<'a>) {
         unsafe { llvm::core::LLVMSetMetadata(self.as_ref().llvm(), id, meta.as_ref().llvm()) }
     }
 
-    pub fn num_successors(&self) -> usize {
+    pub fn num_successors(self) -> usize {
         unsafe { llvm::core::LLVMGetNumSuccessors(self.as_ref().llvm()) as usize }
     }
 
-    pub fn successor(&self, index: usize) -> Result<BasicBlock<'a>, Error> {
+    pub fn successor(self, index: usize) -> Result<BasicBlock<'a>, Error> {
         unsafe {
             BasicBlock::from_inner(llvm::core::LLVMGetSuccessor(
                 self.as_ref().llvm(),
@@ -121,11 +121,11 @@ impl<'a> Instr<'a> {
         }
     }
 
-    pub fn set_successor(&mut self, index: usize, bb: &BasicBlock<'a>) {
+    pub fn set_successor(&mut self, index: usize, bb: BasicBlock<'a>) {
         unsafe { llvm::core::LLVMSetSuccessor(self.as_ref().llvm(), index as c_uint, bb.llvm()) }
     }
 
-    pub fn is_conditional(&self, index: usize) -> Result<BasicBlock<'a>, Error> {
+    pub fn is_conditional(self, index: usize) -> Result<BasicBlock<'a>, Error> {
         unsafe {
             BasicBlock::from_inner(llvm::core::LLVMGetSuccessor(
                 self.as_ref().llvm(),
@@ -134,7 +134,7 @@ impl<'a> Instr<'a> {
         }
     }
 
-    pub fn condition(&self) -> Result<Value<'a>, Error> {
+    pub fn condition(self) -> Result<Value<'a>, Error> {
         unsafe { Value::from_inner(llvm::core::LLVMGetCondition(self.as_ref().llvm())) }
     }
 
@@ -144,25 +144,25 @@ impl<'a> Instr<'a> {
 }
 
 impl<'a> InstrIcmp<'a> {
-    pub fn predicate(&self) -> Icmp {
+    pub fn predicate(self) -> Icmp {
         unsafe { llvm::core::LLVMGetICmpPredicate(self.as_ref().llvm()) }
     }
 }
 
 impl<'a> InstrFcmp<'a> {
-    pub fn predicate(&self) -> Fcmp {
+    pub fn predicate(self) -> Fcmp {
         unsafe { llvm::core::LLVMGetFCmpPredicate(self.as_ref().llvm()) }
     }
 }
 
 impl<'a> InstrAlloca<'a> {
-    pub fn get_type(&self) -> Result<Type<'a>, Error> {
+    pub fn get_type(self) -> Result<Type<'a>, Error> {
         unsafe { Type::from_inner(llvm::core::LLVMGetAllocatedType(self.as_ref().llvm())) }
     }
 }
 
 impl<'a> InstrPhi<'a> {
-    pub fn add_incoming(&self, items: impl AsRef<[(Value<'a>, BasicBlock<'a>)]>) {
+    pub fn add_incoming(&mut self, items: impl AsRef<[(Value<'a>, BasicBlock<'a>)]>) {
         let mut values: Vec<*mut llvm::LLVMValue> =
             items.as_ref().iter().map(|(v, _)| v.llvm()).collect();
 
@@ -180,11 +180,11 @@ impl<'a> InstrPhi<'a> {
         }
     }
 
-    pub fn count_incoming(&self) -> usize {
+    pub fn count_incoming(self) -> usize {
         unsafe { llvm::core::LLVMCountIncoming(self.as_ref().llvm()) as usize }
     }
 
-    pub fn incoming_value(&self, index: usize) -> Result<Value<'a>, Error> {
+    pub fn incoming_value(self, index: usize) -> Result<Value<'a>, Error> {
         unsafe {
             Value::from_inner(llvm::core::LLVMGetIncomingValue(
                 self.as_ref().llvm(),
@@ -193,7 +193,7 @@ impl<'a> InstrPhi<'a> {
         }
     }
 
-    pub fn incoming_block(&self, index: usize) -> Result<BasicBlock<'a>, Error> {
+    pub fn incoming_block(self, index: usize) -> Result<BasicBlock<'a>, Error> {
         unsafe {
             BasicBlock::from_inner(llvm::core::LLVMGetIncomingBlock(
                 self.as_ref().llvm(),
@@ -204,7 +204,7 @@ impl<'a> InstrPhi<'a> {
 }
 
 impl<'a> InstrGep<'a> {
-    pub fn in_bounds(&self) -> bool {
+    pub fn in_bounds(self) -> bool {
         unsafe { llvm::core::LLVMIsInBounds(self.as_ref().llvm()) == 1 }
     }
 
@@ -214,19 +214,19 @@ impl<'a> InstrGep<'a> {
 }
 
 impl<'a> InstrCall<'a> {
-    pub fn num_operands(&self) -> usize {
+    pub fn num_operands(self) -> usize {
         unsafe { llvm::core::LLVMGetNumArgOperands(self.as_ref().llvm()) as usize }
     }
 
-    pub fn function_type(&self) -> Result<Type<'a>, Error> {
+    pub fn function_type(self) -> Result<Type<'a>, Error> {
         unsafe { Type::from_inner(llvm::core::LLVMGetCalledFunctionType(self.as_ref().llvm())) }
     }
 
-    pub fn value(&self) -> Result<Value<'a>, Error> {
+    pub fn value(self) -> Result<Value<'a>, Error> {
         unsafe { Value::from_inner(llvm::core::LLVMGetCalledValue(self.as_ref().llvm())) }
     }
 
-    pub fn is_tail_call(&self) -> bool {
+    pub fn is_tail_call(self) -> bool {
         unsafe { llvm::core::LLVMIsTailCall(self.as_ref().llvm()) == 1 }
     }
 
@@ -236,13 +236,13 @@ impl<'a> InstrCall<'a> {
 }
 
 impl<'a> InstrSwitch<'a> {
-    pub fn default_dest(&self) -> Result<BasicBlock<'a>, Error> {
+    pub fn default_dest(self) -> Result<BasicBlock<'a>, Error> {
         unsafe {
             BasicBlock::from_inner(llvm::core::LLVMGetSwitchDefaultDest(self.as_ref().llvm()))
         }
     }
 
-    pub fn add_case(&self, on_val: impl AsRef<Value<'a>>, dest: &BasicBlock<'a>) {
+    pub fn add_case(&mut self, on_val: impl AsRef<Value<'a>>, dest: BasicBlock<'a>) {
         unsafe {
             llvm::core::LLVMAddCase(self.as_ref().llvm(), on_val.as_ref().llvm(), dest.llvm())
         }
@@ -250,7 +250,7 @@ impl<'a> InstrSwitch<'a> {
 }
 
 impl<'a> InstrIndirectBr<'a> {
-    pub fn add_dest(&self, dest: &BasicBlock<'a>) {
+    pub fn add_dest(&mut self, dest: BasicBlock<'a>) {
         unsafe { llvm::core::LLVMAddDestination(self.as_ref().llvm(), dest.llvm()) }
     }
 }

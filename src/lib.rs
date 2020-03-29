@@ -1,3 +1,5 @@
+#![allow(clippy::should_implement_trait)]
+
 #[allow(non_snake_case)]
 macro_rules! cstr {
     ($x:expr) => {
@@ -16,8 +18,8 @@ macro_rules! llvm_inner_impl {
 }
 
 macro_rules! const_func {
-    ($x:ident($(&$amp:ident$(,)?)? $($n:ident : $t:ty),*$(,)?) $b:block) => {
-        pub fn $x<'b>($(& $amp,)? $($n : $t),*) -> Result<Value<'b>, Error> {
+    ($x:ident($(& $amp:ident$(,)?)? $($n:ident : $t:ty),*$(,)?) $b:block) => {
+        pub fn $x<'b>($($amp,)? $($n : $t),*) -> Result<Value<'b>, Error> {
             unsafe {
                 Value::from_inner($b)
             }
@@ -297,9 +299,9 @@ mod tests {
         let i32 = Type::int(&context, 32)?;
 
         let ft = FuncType::new(i32, &[i32, i32], false)?;
-        module.declare_function(&builder, "testing", &ft, |f| {
+        module.declare_function(&builder, "testing", ft, |f| {
             let params = f.params();
-            let a = builder.add(&params[0], &params[1], "a")?;
+            let a = builder.add(params[0], params[1], "a")?;
             builder.ret(&a)
         })?;
 
@@ -325,7 +327,7 @@ mod tests {
 
         let f32 = Type::float(&ctx)?;
         let ft = FuncType::new(f32, &[f32], false)?;
-        module.declare_function(&builder, "testing", &ft, |f| {
+        module.declare_function(&builder, "testing", ft, |f| {
             let params = f.params();
             let cond = builder.fcmp(
                 Fcmp::LLVMRealULT,
@@ -365,12 +367,12 @@ mod tests {
         let i64 = Type::int(&ctx, 64)?;
 
         let ft = FuncType::new(i64, &[i64], false)?;
-        module.declare_function(&build, "testing", &ft, |f| {
+        module.declare_function(&build, "testing", ft, |f| {
             let params = f.params();
             let one = Const::int(i64, 1, true)?;
             let f = build.for_loop(
                 Const::int(&i64, 0, true)?,
-                |x| build.icmp(Icmp::LLVMIntSLT, x, &params[0], "cond"),
+                |x| build.icmp(Icmp::LLVMIntSLT, x, params[0], "cond"),
                 |x| build.add(x, one, "add"),
                 |x| Ok(*x),
             )?;

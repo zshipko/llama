@@ -89,14 +89,14 @@ mod tests {
         let i32 = llama::Type::int(&context, 32)?;
 
         let ft = llama::FuncType::new(i32, &[i32, i32], false)?;
-        module.declare_function(&builder, "testing_sub", &ft, |f| {
+        module.declare_function(&builder, "testing_sub", ft, |f| {
             let params = f.params();
             let a = builder.sub(&params[0], &params[1], "a")?;
             builder.ret(&a)
         })?;
 
         let ft = llama::FuncType::new(i32, &[i32, i32], false)?;
-        module.declare_function(&builder, "testing", &ft, |f| {
+        module.declare_function(&builder, "testing", ft, |f| {
             let params = f.params();
             let a = builder.add(&params[0], &params[1], "a")?;
             builder.ret(&a)
@@ -123,7 +123,7 @@ mod tests {
 
         let i64 = Type::int(&ctx, 64)?;
         let ft = FuncType::new(i64, &[i64], false)?;
-        module.declare_function(&builder, "testing", &ft, |f| {
+        module.declare_function(&builder, "testing", ft, |f| {
             let params = f.params();
             let one = Const::int(i64, 1, true)?;
             let f = builder.for_loop(

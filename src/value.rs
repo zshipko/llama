@@ -15,12 +15,12 @@ pub enum AttributeIndex {
 }
 
 impl AttributeIndex {
-    pub(crate) fn get_index(&self) -> u32 {
+    pub(crate) fn get_index(self) -> u32 {
         match self {
             AttributeIndex::Return => llvm::LLVMAttributeReturnIndex,
             AttributeIndex::Param(index) => {
                 assert!(
-                    *index <= u32::max_value() - 2,
+                    index <= u32::max_value() - 2,
                     "Param index must be <= u32::max_value() - 2"
                 );
 
@@ -39,7 +39,7 @@ impl<'a> AsRef<Value<'a>> for Value<'a> {
 
 impl<'a> Clone for Value<'a> {
     fn clone(&self) -> Value<'a> {
-        Value(self.0.clone(), PhantomData)
+        Value(self.0, PhantomData)
     }
 }
 
@@ -53,19 +53,19 @@ impl<'a> Value<'a> {
         Metadata(self)
     }
 
-    pub fn is_basic_block(&self) -> bool {
+    pub fn is_basic_block(self) -> bool {
         unsafe { llvm::core::LLVMValueIsBasicBlock(self.llvm()) == 0 }
     }
 
-    pub fn kind(&self) -> ValueKind {
+    pub fn kind(self) -> ValueKind {
         unsafe { llvm::core::LLVMGetValueKind(self.llvm()) }
     }
 
-    pub fn is(&self, kind: ValueKind) -> bool {
+    pub fn is(self, kind: ValueKind) -> bool {
         self.kind() == kind
     }
 
-    pub fn type_of(&self) -> Result<Type<'a>, Error> {
+    pub fn type_of(self) -> Result<Type<'a>, Error> {
         let t = unsafe { llvm::core::LLVMTypeOf(self.llvm()) };
         Type::from_inner(t)
     }
@@ -74,11 +74,11 @@ impl<'a> Value<'a> {
         self.type_of()?.into_context()
     }
 
-    pub fn context(&self) -> Result<Context, Error> {
+    pub fn context(self) -> Result<Context<'a>, Error> {
         self.type_of()?.into_context()
     }
 
-    pub fn name(&self) -> Result<&str, Error> {
+    pub fn name(self) -> Result<&'a str, Error> {
         let mut size = 0;
         unsafe {
             let s = llvm::core::LLVMGetValueName2(self.llvm(), &mut size);
@@ -94,7 +94,7 @@ impl<'a> Value<'a> {
         unsafe { llvm::core::LLVMSetValueName2(self.llvm(), name.as_ptr(), len) }
     }
 
-    pub fn replace_all_uses_with(&self, other: impl AsRef<Value<'a>>) {
+    pub fn replace_all_uses_with(self, other: impl AsRef<Value<'a>>) {
         unsafe { llvm::core::LLVMReplaceAllUsesWith(self.llvm(), other.as_ref().llvm()) }
     }
 
@@ -102,15 +102,15 @@ impl<'a> Value<'a> {
         unsafe { llvm::core::LLVMDeleteGlobal(self.llvm()) }
     }
 
-    pub fn initializer(&self) -> Result<Value<'a>, Error> {
+    pub fn initializer(self) -> Result<Value<'a>, Error> {
         unsafe { Value::from_inner(llvm::core::LLVMGetInitializer(self.llvm())) }
     }
 
-    pub fn set_initializer(&mut self, val: &Const<'a>) {
+    pub fn set_initializer(&mut self, val: Const<'a>) {
         unsafe { llvm::core::LLVMSetInitializer(self.llvm(), val.as_ref().llvm()) }
     }
 
-    pub fn is_global_constant(&self) -> bool {
+    pub fn is_global_constant(self) -> bool {
         unsafe { llvm::core::LLVMIsGlobalConstant(self.llvm()) == 1 }
     }
 
@@ -118,7 +118,7 @@ impl<'a> Value<'a> {
         unsafe { llvm::core::LLVMSetGlobalConstant(self.llvm(), if b { 1 } else { 0 }) }
     }
 
-    pub fn is_extern(&self) -> bool {
+    pub fn is_extern(self) -> bool {
         unsafe { llvm::core::LLVMIsExternallyInitialized(self.llvm()) == 1 }
     }
 
@@ -126,7 +126,7 @@ impl<'a> Value<'a> {
         unsafe { llvm::core::LLVMSetExternallyInitialized(self.llvm(), if b { 1 } else { 0 }) }
     }
 
-    pub fn is_thread_local(&self) -> bool {
+    pub fn is_thread_local(self) -> bool {
         unsafe { llvm::core::LLVMIsThreadLocal(self.llvm()) == 1 }
     }
 
@@ -134,7 +134,7 @@ impl<'a> Value<'a> {
         unsafe { llvm::core::LLVMSetThreadLocal(self.llvm(), if b { 1 } else { 0 }) }
     }
 
-    pub fn is_const(&self) -> bool {
+    pub fn is_const(self) -> bool {
         unsafe { llvm::core::LLVMIsConstant(self.llvm()) == 1 }
     }
 
@@ -146,7 +146,7 @@ impl<'a> Value<'a> {
         Ok(Const(self))
     }
 
-    pub fn to_basic_block(&self) -> Result<BasicBlock<'a>, Error> {
+    pub fn to_basic_block(self) -> Result<BasicBlock<'a>, Error> {
         if !self.is_basic_block() {
             return Err(Error::InvalidBasicBlock);
         }
@@ -155,23 +155,23 @@ impl<'a> Value<'a> {
         BasicBlock::from_inner(ptr)
     }
 
-    pub fn is_undef(&self) -> bool {
+    pub fn is_undef(self) -> bool {
         unsafe { llvm::core::LLVMIsUndef(self.llvm()) == 1 }
     }
 
-    pub fn is_null(&self) -> bool {
+    pub fn is_null(self) -> bool {
         unsafe { llvm::core::LLVMIsNull(self.llvm()) == 1 }
     }
 
-    pub fn is_constant_string(&self) -> bool {
+    pub fn is_constant_string(self) -> bool {
         unsafe { llvm::core::LLVMIsConstantString(self.llvm()) == 1 }
     }
 
-    pub fn count_basic_blocks(&self) -> usize {
+    pub fn count_basic_blocks(self) -> usize {
         unsafe { llvm::core::LLVMCountBasicBlocks(self.llvm()) as usize }
     }
 
-    pub fn basic_blocks(&self) -> Vec<BasicBlock<'a>> {
+    pub fn basic_blocks(self) -> Vec<BasicBlock<'a>> {
         let count = self.count_basic_blocks();
         let ptr = std::ptr::null_mut();
         unsafe { llvm::core::LLVMGetBasicBlocks(self.llvm(), ptr) }
@@ -182,19 +182,19 @@ impl<'a> Value<'a> {
             .collect()
     }
 
-    pub fn first_basic_block(&self) -> Result<BasicBlock<'a>, Error> {
+    pub fn first_basic_block(self) -> Result<BasicBlock<'a>, Error> {
         BasicBlock::from_inner(unsafe { llvm::core::LLVMGetFirstBasicBlock(self.llvm()) })
     }
 
-    pub fn last_basic_block(&self) -> Result<BasicBlock<'a>, Error> {
+    pub fn last_basic_block(self) -> Result<BasicBlock<'a>, Error> {
         BasicBlock::from_inner(unsafe { llvm::core::LLVMGetLastBasicBlock(self.llvm()) })
     }
 
-    pub fn entry_basic_block(&self) -> Result<BasicBlock<'a>, Error> {
+    pub fn entry_basic_block(self) -> Result<BasicBlock<'a>, Error> {
         BasicBlock::from_inner(unsafe { llvm::core::LLVMGetEntryBasicBlock(self.llvm()) })
     }
 
-    pub fn append_basic_block(&self, bb: &BasicBlock<'a>) {
+    pub fn append_basic_block(self, bb: BasicBlock<'a>) {
         unsafe { llvm::core::LLVMAppendExistingBasicBlock(self.llvm(), bb.llvm()) }
     }
 }
@@ -206,6 +206,7 @@ impl<'a> std::fmt::Display for Value<'a> {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct Func<'a>(pub(crate) Value<'a>);
 
 impl<'a> AsRef<Value<'a>> for Func<'a> {
@@ -221,20 +222,20 @@ impl<'a> From<Func<'a>> for Value<'a> {
 }
 
 impl<'a> Func<'a> {
-    pub fn param_count(&self) -> usize {
+    pub fn param_count(self) -> usize {
         let n = unsafe { llvm::core::LLVMCountParams(self.as_ref().llvm()) };
         n as usize
     }
 
-    pub fn func_type(&self) -> Result<FuncType<'a>, Error> {
+    pub fn func_type(self) -> Result<FuncType<'a>, Error> {
         self.as_ref().type_of().map(|x| x.into_func_type().unwrap())
     }
 
-    pub fn param(&self, i: usize) -> Result<Value<'a>, Error> {
+    pub fn param(self, i: usize) -> Result<Value<'a>, Error> {
         unsafe { Value::from_inner(llvm::core::LLVMGetParam(self.as_ref().llvm(), i as u32)) }
     }
 
-    pub fn params(&self) -> Vec<Value<'a>> {
+    pub fn params(self) -> Vec<Value<'a>> {
         let len = self.param_count();
         let mut data = vec![std::ptr::null_mut(); len];
 
@@ -245,7 +246,7 @@ impl<'a> Func<'a> {
     }
 
     /// Verify the function, returning an error on failure
-    pub fn verify(&self) -> Result<(), Error> {
+    pub fn verify(self) -> Result<(), Error> {
         let ok = unsafe {
             llvm::analysis::LLVMVerifyFunction(
                 self.as_ref().llvm(),
@@ -260,12 +261,12 @@ impl<'a> Func<'a> {
         Ok(())
     }
 
-    pub fn next_function(&self) -> Result<Func<'a>, Error> {
+    pub fn next_function(self) -> Result<Func<'a>, Error> {
         let v = unsafe { llvm::core::LLVMGetNextFunction(self.as_ref().llvm()) };
         Value::from_inner(v).map(Func)
     }
 
-    pub fn prev_function(&self) -> Result<Func<'a>, Error> {
+    pub fn prev_function(self) -> Result<Func<'a>, Error> {
         let v = unsafe { llvm::core::LLVMGetPreviousFunction(self.as_ref().llvm()) };
         Value::from_inner(v).map(Func)
     }
@@ -274,11 +275,11 @@ impl<'a> Func<'a> {
         unsafe { llvm::core::LLVMDeleteFunction(self.as_ref().llvm()) }
     }
 
-    pub fn has_personality_fn(&self) -> bool {
+    pub fn has_personality_fn(self) -> bool {
         unsafe { llvm::core::LLVMHasPersonalityFn(self.as_ref().llvm()) == 1 }
     }
 
-    pub fn personality_fn(&self) -> Result<Value<'a>, Error> {
+    pub fn personality_fn(self) -> Result<Value<'a>, Error> {
         unsafe { Value::from_inner(llvm::core::LLVMGetPersonalityFn(self.as_ref().llvm())) }
     }
 
@@ -286,7 +287,7 @@ impl<'a> Func<'a> {
         unsafe { llvm::core::LLVMSetPersonalityFn(self.as_ref().llvm(), f.as_ref().llvm()) }
     }
 
-    pub fn gc(&self) -> Option<&str> {
+    pub fn gc(self) -> Option<&'a str> {
         let gc = unsafe { llvm::core::LLVMGetGC(self.as_ref().llvm()) };
         if gc.is_null() {
             return None;
@@ -303,7 +304,7 @@ impl<'a> Func<'a> {
         unsafe { llvm::core::LLVMSetGC(self.as_ref().llvm(), name.as_ptr()) }
     }
 
-    pub fn call_conv(&self) -> CallConv {
+    pub fn call_conv(self) -> CallConv {
         unsafe { std::mem::transmute(llvm::core::LLVMGetFunctionCallConv(self.as_ref().llvm())) }
     }
 
@@ -344,7 +345,7 @@ impl<'a> Func<'a> {
         }
     }
 
-    pub fn attributes(&self, index: usize) -> Vec<Attribute<'a>> {
+    pub fn attributes(self, index: usize) -> Vec<Attribute<'a>> {
         let count = unsafe {
             llvm::core::LLVMGetAttributeCountAtIndex(self.as_ref().llvm(), index as c_uint)
         };

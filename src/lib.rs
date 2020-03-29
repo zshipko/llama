@@ -27,9 +27,17 @@ macro_rules! const_func {
 
 macro_rules! instr {
     ($x:ident($(&$amp:ident$(,)?)? $($n:ident : $t:ty),*$(,)?) $b:block) => {
-        pub fn $x<'b>($(& $amp,)? $($n : $t),*) -> Result<Instruction<'b>, Error> {
+        pub fn $x<'b>($(& $amp,)? $($n : $t),*) -> Result<Instr<'b>, Error> {
             unsafe {
-                Instruction::from_inner($b)
+                Instr::from_inner($b)
+            }
+        }
+    };
+
+    ($ret:ident: $x:ident($(&$amp:ident$(,)?)? $($n:ident : $t:ty),*$(,)?) $b:block) => {
+        pub fn $x<'b>($(& $amp,)? $($n : $t),*) -> Result<$ret<'b>, Error> {
+            unsafe {
+                Ok($ret::from_instr(Instr::from_inner($b)?))
             }
         }
     }
@@ -71,7 +79,7 @@ pub use crate::codegen::Codegen;
 pub use crate::context::Context;
 pub use crate::error::Error;
 pub use crate::execution_engine::ExecutionEngine;
-pub use crate::instr::Instruction;
+pub use crate::instr::*;
 pub use crate::metadata::Metadata;
 pub use crate::module::Module;
 pub use crate::pass_manager::{
@@ -91,8 +99,8 @@ pub use llvm::{
     },
     LLVMAtomicOrdering as AtomicOrdering, LLVMAtomicRMWBinOp as AtomicRMWBinOp,
     LLVMCallConv as CallConv, LLVMDiagnosticSeverity as DiagnosticSeverity,
-    LLVMInlineAsmDialect as InlineAsmDialect, LLVMIntPredicate as ICmp, LLVMLinkage as Linkage,
-    LLVMModuleFlagBehavior as ModuleFlagBehavior, LLVMOpcode as OpCode, LLVMRealPredicate as FCmp,
+    LLVMInlineAsmDialect as InlineAsmDialect, LLVMIntPredicate as Icmp, LLVMLinkage as Linkage,
+    LLVMModuleFlagBehavior as ModuleFlagBehavior, LLVMOpcode as OpCode, LLVMRealPredicate as Fcmp,
     LLVMThreadLocalMode as ThreadLocalMode, LLVMUnnamedAddr as UnnamedAddr,
     LLVMVisibility as Visibility,
 };
@@ -320,7 +328,7 @@ mod tests {
         module.declare_function(&builder, "testing", &ft, |f| {
             let params = f.params();
             let cond = builder.fcmp(
-                FCmp::LLVMRealULT,
+                Fcmp::LLVMRealULT,
                 &params[0],
                 Const::real(f32, 10.0)?,
                 "cond",
@@ -362,7 +370,7 @@ mod tests {
             let one = Const::int(i64, 1, true)?;
             let f = build.for_loop(
                 Const::int(&i64, 0, true)?,
-                |x| build.icmp(ICmp::LLVMIntSLT, x, &params[0], "cond"),
+                |x| build.icmp(Icmp::LLVMIntSLT, x, &params[0], "cond"),
                 |x| build.add(x, one, "add"),
                 |x| Ok(*x),
             )?;

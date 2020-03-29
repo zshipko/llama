@@ -160,7 +160,7 @@ impl<'a> Module<'a> {
         name: impl AsRef<str>,
         ft: &FuncType,
         def: F,
-    ) -> Result<Instruction<'a>, Error> {
+    ) -> Result<Instr<'a>, Error> {
         let f = self.define_function(name, &ft)?;
         builder.function_body(&f, |_, _| def(&f))
     }

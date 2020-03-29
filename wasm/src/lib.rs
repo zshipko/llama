@@ -128,7 +128,7 @@ mod tests {
             let one = Const::int(i64, 1, true)?;
             let f = builder.for_loop(
                 Const::int(i64, 0, true)?,
-                |x| builder.icmp(ICmp::LLVMIntSLE, x, &params[0], "cond"),
+                |x| builder.icmp(Icmp::LLVMIntSLE, x, &params[0], "cond"),
                 |x| builder.add(x, one, "add"),
                 |x| Ok(*x),
             )?;

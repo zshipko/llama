@@ -76,12 +76,12 @@ impl<'a> Builder<'a> {
         &self,
         f: &Func<'a>,
         def: F,
-    ) -> Result<Instruction<'a>, Error> {
+    ) -> Result<Instr<'a>, Error> {
         let entry = BasicBlock::append(self.context(), f.as_ref(), "entry")?;
         self.position_at_end(&entry);
         let v = def(self, entry)?;
         f.verify()?;
-        Ok(Instruction(v.into()))
+        Ok(Instr(v.into()))
     }
 
     /// If-statement
@@ -95,7 +95,7 @@ impl<'a> Builder<'a> {
         cond: impl AsRef<Value<'a>>,
         then_: Then,
         else_: Else,
-    ) -> Result<Instruction<'a>, Error> {
+    ) -> Result<InstrPhi<'a>, Error> {
         let ctx = self.context();
         let start_bb = self.insertion_block()?;
         let function = start_bb.parent()?;
@@ -122,7 +122,7 @@ impl<'a> Builder<'a> {
         self.position_at_end(&merge_bb);
 
         let phi = self.phi(then_.type_of()?, "ite")?;
-        phi.phi_add_incoming(&[(&then_, &new_then_bb), (&else_, &new_else_bb)]);
+        phi.add_incoming(&[(&then_, &new_then_bb), (&else_, &new_else_bb)]);
         Ok(phi)
     }
 
@@ -153,7 +153,7 @@ impl<'a> Builder<'a> {
         self.position_at_end(&loop_bb);
 
         let var = self.phi(start.type_of()?, "x")?;
-        var.phi_add_incoming(&[(start, &preheader_bb)]);
+        var.add_incoming(&[(start, &preheader_bb)]);
 
         let _body = f(var.as_ref())?;
 
@@ -166,7 +166,7 @@ impl<'a> Builder<'a> {
         self.cond_br(cond, &loop_bb, &after_bb)?;
         self.position_at_end(&after_bb);
 
-        var.phi_add_incoming(&[(&next_var, &loop_end_bb)]);
+        var.add_incoming(&[(&next_var, &loop_end_bb)]);
         Ok(_body.into())
     }
 
@@ -199,21 +199,21 @@ impl<'a> Builder<'a> {
         llvm::core::LLVMBuildCondBr(self.llvm(), if_.as_ref().llvm(), then_.llvm(), else_.llvm())
     });
 
-    instr!(switch(&self, v: impl AsRef<Value<'a>>, bb: &BasicBlock<'a>, num_cases: usize) {
+    instr!(InstrSwitch: switch(&self, v: impl AsRef<Value<'a>>, bb: &BasicBlock<'a>, num_cases: usize) {
         llvm::core::LLVMBuildSwitch(self.llvm(), v.as_ref().llvm(), bb.llvm(), num_cases as c_uint)
     });
 
-    instr!(indirect_br(&self, addr: impl AsRef<Value<'a>>, num_dests: usize) {
+    instr!(InstrIndirectBr: indirect_br(&self, addr: impl AsRef<Value<'a>>, num_dests: usize) {
         llvm::core::LLVMBuildIndirectBr(self.llvm(), addr.as_ref().llvm(), num_dests as c_uint)
     });
 
-    instr!(invoke(&self, f: impl AsRef<Value<'a>>, args: impl AsRef<[Value<'a>]>, then: &BasicBlock<'a>, catch: &BasicBlock<'a>, name: impl AsRef<str>) {
+    instr!(InstrCall: invoke(&self, f: impl AsRef<Value<'a>>, args: impl AsRef<[Value<'a>]>, then: &BasicBlock<'a>, catch: &BasicBlock<'a>, name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
         let mut args: Vec<*mut llvm::LLVMValue> = args.as_ref().iter().map(|x| x.llvm()).collect();
         llvm::core::LLVMBuildInvoke(self.llvm(), f.as_ref().llvm(), args.as_mut_ptr(), args.len() as c_uint, then.llvm(), catch.llvm(), name.as_ptr())
     });
 
-    instr!(invoke2(&self, t: impl AsRef<Type<'a>>, f: impl AsRef<Value<'a>>, args: impl AsRef<[Value<'a>]>, then: &BasicBlock<'a>, catch: &BasicBlock<'a>, name: impl AsRef<str>) {
+    instr!(InstrCall: invoke2(&self, t: impl AsRef<Type<'a>>, f: impl AsRef<Value<'a>>, args: impl AsRef<[Value<'a>]>, then: &BasicBlock<'a>, catch: &BasicBlock<'a>, name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
         let mut args: Vec<*mut llvm::LLVMValue> = args.as_ref().iter().map(|x| x.llvm()).collect();
         llvm::core::LLVMBuildInvoke2(self.llvm(), t.as_ref().llvm(), f.as_ref().llvm(), args.as_mut_ptr(), args.len() as c_uint, then.llvm(), catch.llvm(), name.as_ptr())
@@ -260,10 +260,10 @@ impl<'a> Builder<'a> {
         lhs: impl AsRef<Value<'a>>,
         rhs: impl AsRef<Value<'a>>,
         name: impl AsRef<str>,
-    ) -> Result<Instruction<'a>, Error> {
+    ) -> Result<Instr<'a>, Error> {
         let name = cstr!(name.as_ref());
         unsafe {
-            Ok(Instruction(Value::from_inner(llvm::core::LLVMBuildBinOp(
+            Ok(Instr(Value::from_inner(llvm::core::LLVMBuildBinOp(
                 self.llvm(),
                 op,
                 lhs.as_ref().llvm(),
@@ -359,7 +359,7 @@ impl<'a> Builder<'a> {
         )
     });
 
-    instr!(alloca(&self, t: impl AsRef<Type<'a>>, name: impl AsRef<str>) {
+    instr!(InstrAlloca: alloca(&self, t: impl AsRef<Type<'a>>, name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
         llvm::core::LLVMBuildAlloca(
             self.llvm(),
@@ -410,7 +410,7 @@ impl<'a> Builder<'a> {
         )
     });
 
-    instr!(gep(
+    instr!(InstrGep: gep(
         &self,
         ptr: impl AsRef<Value<'a>>,
         indices: impl AsRef<[Value<'a>]>,
@@ -429,7 +429,7 @@ impl<'a> Builder<'a> {
         )
     });
 
-    instr!(in_bounds_gep(
+    instr!(InstrGep: in_bounds_gep(
         &self,
         ptr: impl AsRef<Value<'a>>,
         indices: impl AsRef<[Value<'a>]>,
@@ -448,7 +448,7 @@ impl<'a> Builder<'a> {
         )
     });
 
-    instr!(struct_gep(&self, ptr: impl AsRef<Value<'a>>, index: usize, name: impl AsRef<str>) {
+    instr!(InstrGep: struct_gep(&self, ptr: impl AsRef<Value<'a>>, index: usize, name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
         llvm::core::LLVMBuildStructGEP(
             self.llvm(),
@@ -458,7 +458,7 @@ impl<'a> Builder<'a> {
         )
     });
 
-    instr!(gep2(
+    instr!(InstrGep: gep2(
         &self,
         ty: impl AsRef<Type<'a>>,
         ptr: impl AsRef<Value<'a>>,
@@ -479,7 +479,7 @@ impl<'a> Builder<'a> {
         )
     });
 
-    instr!(in_bounds_gep2(
+    instr!(InstrGep: in_bounds_gep2(
         &self,
         ty: impl AsRef<Type<'a>>,
         ptr: impl AsRef<Value<'a>>,
@@ -500,7 +500,7 @@ impl<'a> Builder<'a> {
         )
     });
 
-    instr!(struct_gep2(
+    instr!(InstrGep: struct_gep2(
         &self,
         ty: impl AsRef<Type<'a>>,
         ptr: impl AsRef<Value<'a>>,
@@ -824,9 +824,9 @@ impl<'a> Builder<'a> {
         )
     });
 
-    instr!(icmp(
+    instr!(InstrIcmp: icmp(
         &self,
-        op: ICmp,
+        op: Icmp,
         lhs: impl AsRef<Value<'a>>,
         rhs: impl AsRef<Value<'a>>,
         name: impl AsRef<str>,
@@ -841,9 +841,9 @@ impl<'a> Builder<'a> {
         )
     });
 
-    instr!(fcmp(
+    instr!(InstrFcmp: fcmp(
         &self,
-        op: FCmp,
+        op: Fcmp,
         lhs: impl AsRef<Value<'a>>,
         rhs: impl AsRef<Value<'a>>,
         name: impl AsRef<str>,
@@ -858,7 +858,7 @@ impl<'a> Builder<'a> {
         )
     });
 
-    instr!(phi(&self, ty: impl AsRef<Type<'a>>, name: impl AsRef<str>) {
+    instr!(InstrPhi: phi(&self, ty: impl AsRef<Type<'a>>, name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
         llvm::core::LLVMBuildPhi(
             self.llvm(),
@@ -867,7 +867,7 @@ impl<'a> Builder<'a> {
         )
     });
 
-    instr!(call(&self, f: &Func<'a>, args: impl AsRef<[Value<'a>]>, name: impl AsRef<str>) {
+    instr!(InstrCall: call(&self, f: &Func<'a>, args: impl AsRef<[Value<'a>]>, name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
         let mut values: Vec<*mut llvm::LLVMValue> = args.as_ref().iter().map(|x| x.llvm()).collect();
         let ptr = values.as_mut_ptr();
@@ -876,7 +876,7 @@ impl<'a> Builder<'a> {
         llvm::core::LLVMBuildCall(self.llvm(), f.as_ref().llvm(), ptr, len as c_uint, name.as_ptr())
     });
 
-    instr!(call2(&self, t: impl AsRef<Type<'a>>, f: &Func<'a>, args: impl AsRef<[Value<'a>]>, name: impl AsRef<str>) {
+    instr!(InstrCall: call2(&self, t: impl AsRef<Type<'a>>, f: &Func<'a>, args: impl AsRef<[Value<'a>]>, name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
         let mut values: Vec<*mut llvm::LLVMValue> = args.as_ref().iter().map(|x| x.llvm()).collect();
         let ptr = values.as_mut_ptr();

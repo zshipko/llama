@@ -436,7 +436,7 @@ impl<'a> Const<'a> {
         }
     }
 
-    pub fn icmp(&self, pred: ICmp, other: &Const<'a>) -> Result<Const<'a>, Error> {
+    pub fn icmp(&self, pred: Icmp, other: &Const<'a>) -> Result<Const<'a>, Error> {
         unsafe {
             Value::from_inner(llvm::core::LLVMConstICmp(
                 pred,
@@ -447,7 +447,7 @@ impl<'a> Const<'a> {
         }
     }
 
-    pub fn fcmp(&self, pred: FCmp, other: &Const<'a>) -> Result<Const<'a>, Error> {
+    pub fn fcmp(&self, pred: Fcmp, other: &Const<'a>) -> Result<Const<'a>, Error> {
         unsafe {
             Value::from_inner(llvm::core::LLVMConstFCmp(
                 pred,

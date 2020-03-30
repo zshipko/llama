@@ -210,7 +210,6 @@ impl<'a> FuncType<'a> {
     pub fn new(
         return_type: impl AsRef<Type<'a>>,
         params: impl AsRef<[Type<'a>]>,
-        var_arg: bool,
     ) -> Result<FuncType<'a>, Error> {
         let mut params: Vec<*mut llvm::LLVMType> =
             params.as_ref().iter().map(|x| x.llvm()).collect();
@@ -220,7 +219,26 @@ impl<'a> FuncType<'a> {
                 return_type.as_ref().llvm(),
                 params.as_mut_ptr(),
                 len as u32,
-                if var_arg { 1 } else { 0 },
+                0,
+            )
+        };
+        let x = Type::from_inner(t)?;
+        x.into_func_type()
+    }
+
+    pub fn new_var_arg(
+        return_type: impl AsRef<Type<'a>>,
+        params: impl AsRef<[Type<'a>]>,
+    ) -> Result<FuncType<'a>, Error> {
+        let mut params: Vec<*mut llvm::LLVMType> =
+            params.as_ref().iter().map(|x| x.llvm()).collect();
+        let len = params.len();
+        let t = unsafe {
+            llvm::core::LLVMFunctionType(
+                return_type.as_ref().llvm(),
+                params.as_mut_ptr(),
+                len as u32,
+                1,
             )
         };
         let x = Type::from_inner(t)?;
@@ -253,21 +271,25 @@ impl<'a> FuncType<'a> {
 }
 
 impl<'a> StructType<'a> {
-    pub fn new(
+    pub fn new(ctx: &Context<'a>, fields: impl AsRef<[Type<'a>]>) -> Result<StructType<'a>, Error> {
+        let mut fields: Vec<*mut llvm::LLVMType> =
+            fields.as_ref().iter().map(|x| x.llvm()).collect();
+        let len = fields.len();
+        let t = unsafe {
+            llvm::core::LLVMStructTypeInContext(ctx.llvm(), fields.as_mut_ptr(), len as u32, 0)
+        };
+        Type::from_inner(t)?.into_struct_type()
+    }
+
+    pub fn new_packed(
         ctx: &Context<'a>,
         fields: impl AsRef<[Type<'a>]>,
-        packed: bool,
     ) -> Result<StructType<'a>, Error> {
         let mut fields: Vec<*mut llvm::LLVMType> =
             fields.as_ref().iter().map(|x| x.llvm()).collect();
         let len = fields.len();
         let t = unsafe {
-            llvm::core::LLVMStructTypeInContext(
-                ctx.llvm(),
-                fields.as_mut_ptr(),
-                len as u32,
-                if packed { 1 } else { 0 },
-            )
+            llvm::core::LLVMStructTypeInContext(ctx.llvm(), fields.as_mut_ptr(), len as u32, 1)
         };
         Type::from_inner(t)?.into_struct_type()
     }
@@ -290,17 +312,21 @@ impl<'a> StructType<'a> {
         }
     }
 
-    pub fn set_body(&mut self, fields: impl AsRef<[Type<'a>]>, packed: bool) {
+    pub fn set_body(&mut self, fields: impl AsRef<[Type<'a>]>) {
         let mut fields: Vec<*mut llvm::LLVMType> =
             fields.as_ref().iter().map(|x| x.llvm()).collect();
         let len = fields.len();
         unsafe {
-            llvm::core::LLVMStructSetBody(
-                self.as_ref().llvm(),
-                fields.as_mut_ptr(),
-                len as u32,
-                if packed { 1 } else { 0 },
-            )
+            llvm::core::LLVMStructSetBody(self.as_ref().llvm(), fields.as_mut_ptr(), len as u32, 0)
+        };
+    }
+
+    pub fn set_body_packed(&mut self, fields: impl AsRef<[Type<'a>]>) {
+        let mut fields: Vec<*mut llvm::LLVMType> =
+            fields.as_ref().iter().map(|x| x.llvm()).collect();
+        let len = fields.len();
+        unsafe {
+            llvm::core::LLVMStructSetBody(self.as_ref().llvm(), fields.as_mut_ptr(), len as u32, 1)
         };
     }
 

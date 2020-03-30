@@ -115,7 +115,7 @@ impl<'a> Value<'a> {
     }
 
     pub fn set_global_constant(&mut self, b: bool) {
-        unsafe { llvm::core::LLVMSetGlobalConstant(self.llvm(), if b { 1 } else { 0 }) }
+        unsafe { llvm::core::LLVMSetGlobalConstant(self.llvm(), b as c_int) }
     }
 
     pub fn is_extern(self) -> bool {

@@ -88,14 +88,14 @@ mod tests {
 
         let i32 = llama::Type::int(&context, 32)?;
 
-        let ft = llama::FuncType::new(i32, &[i32, i32], false)?;
+        let ft = llama::FuncType::new(i32, &[i32, i32])?;
         module.declare_function(&builder, "testing_sub", ft, |f| {
             let params = f.params();
             let a = builder.sub(&params[0], &params[1], "a")?;
             builder.ret(&a)
         })?;
 
-        let ft = llama::FuncType::new(i32, &[i32, i32], false)?;
+        let ft = llama::FuncType::new(i32, &[i32, i32])?;
         module.declare_function(&builder, "testing", ft, |f| {
             let params = f.params();
             let a = builder.add(&params[0], &params[1], "a")?;
@@ -122,12 +122,12 @@ mod tests {
         let builder = Builder::new(&ctx)?;
 
         let i64 = Type::int(&ctx, 64)?;
-        let ft = FuncType::new(i64, &[i64], false)?;
+        let ft = FuncType::new(i64, &[i64])?;
         module.declare_function(&builder, "testing", ft, |f| {
             let params = f.params();
-            let one = Const::int(i64, 1, true)?;
+            let one = Const::int_sext(i64, 1)?;
             let f = builder.for_loop(
-                Const::int(i64, 0, true)?,
+                Const::int_sext(i64, 0)?,
                 |x| builder.icmp(Icmp::LLVMIntSLE, x, &params[0], "cond"),
                 |x| builder.add(x, one, "add"),
                 |x| Ok(*x),

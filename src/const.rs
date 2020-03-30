@@ -16,11 +16,19 @@ impl<'a> From<Const<'a>> for Value<'a> {
 }
 
 impl<'a> Const<'a> {
-    const_func!(int(t: impl AsRef<Type<'a>>, i: i64, sign_extend: bool) {
+    const_func!(int(t: impl AsRef<Type<'a>>, i: i64) {
         llvm::core::LLVMConstInt(
             t.as_ref().llvm(),
             i as u64,
-            sign_extend as c_int,
+            0
+        )
+    });
+
+    const_func!(int_sext(t: impl AsRef<Type<'a>>, i: i64) {
+        llvm::core::LLVMConstInt(
+            t.as_ref().llvm(),
+            i as u64,
+            1
         )
     });
 
@@ -71,7 +79,6 @@ impl<'a> Const<'a> {
     const_func!(string(
         ctx: &Context<'a>,
         s: impl AsRef<str>,
-        no_null_terminator: bool,
     ) {
         let len = s.as_ref().len();
         let s = cstr!(s.as_ref());
@@ -79,7 +86,21 @@ impl<'a> Const<'a> {
             ctx.llvm(),
             s.as_ptr(),
             len as c_uint,
-            if no_null_terminator { 1 } else { 0 },
+            0
+        )
+    });
+
+    const_func!(string_no_null(
+        ctx: &Context<'a>,
+        s: impl AsRef<str>,
+    ) {
+        let len = s.as_ref().len();
+        let s = cstr!(s.as_ref());
+        llvm::core::LLVMConstStringInContext(
+            ctx.llvm(),
+            s.as_ptr(),
+            len as c_uint,
+            1
         )
     });
 
@@ -132,17 +153,23 @@ impl<'a> Const<'a> {
     pub fn crate_struct(
         ctx: &Context<'a>,
         vals: impl AsRef<[Value<'a>]>,
-        packed: bool,
     ) -> Result<Const<'a>, Error> {
         let len = vals.as_ref().len();
         let mut vals: Vec<*mut llvm::LLVMValue> = vals.as_ref().iter().map(|x| x.llvm()).collect();
         let v = unsafe {
-            llvm::core::LLVMConstStructInContext(
-                ctx.llvm(),
-                vals.as_mut_ptr(),
-                len as c_uint,
-                if packed { 1 } else { 0 },
-            )
+            llvm::core::LLVMConstStructInContext(ctx.llvm(), vals.as_mut_ptr(), len as c_uint, 0)
+        };
+        Value::from_inner(v)?.into_const()
+    }
+
+    pub fn crate_packed_struct(
+        ctx: &Context<'a>,
+        vals: impl AsRef<[Value<'a>]>,
+    ) -> Result<Const<'a>, Error> {
+        let len = vals.as_ref().len();
+        let mut vals: Vec<*mut llvm::LLVMValue> = vals.as_ref().iter().map(|x| x.llvm()).collect();
+        let v = unsafe {
+            llvm::core::LLVMConstStructInContext(ctx.llvm(), vals.as_mut_ptr(), len as c_uint, 1)
         };
         Value::from_inner(v)?.into_const()
     }

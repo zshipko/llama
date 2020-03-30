@@ -298,7 +298,7 @@ mod tests {
 
         let i32 = Type::int(&context, 32)?;
 
-        let ft = FuncType::new(i32, &[i32, i32], false)?;
+        let ft = FuncType::new(i32, &[i32, i32])?;
         module.declare_function(&builder, "testing", ft, |f| {
             let params = f.params();
             let a = builder.add(params[0], params[1], "a")?;
@@ -326,7 +326,7 @@ mod tests {
         let builder = Builder::new(&ctx)?;
 
         let f32 = Type::float(&ctx)?;
-        let ft = FuncType::new(f32, &[f32], false)?;
+        let ft = FuncType::new(f32, &[f32])?;
         module.declare_function(&builder, "testing", ft, |f| {
             let params = f.params();
             let cond = builder.fcmp(
@@ -366,12 +366,12 @@ mod tests {
 
         let i64 = Type::int(&ctx, 64)?;
 
-        let ft = FuncType::new(i64, &[i64], false)?;
+        let ft = FuncType::new(i64, &[i64])?;
         module.declare_function(&build, "testing", ft, |f| {
             let params = f.params();
-            let one = Const::int(i64, 1, true)?;
+            let one = Const::int_sext(i64, 1)?;
             let f = build.for_loop(
-                Const::int(&i64, 0, true)?,
+                Const::int_sext(&i64, 0)?,
                 |x| build.icmp(Icmp::LLVMIntSLT, x, params[0], "cond"),
                 |x| build.add(x, one, "add"),
                 |x| Ok(*x),

@@ -19,9 +19,9 @@ macro_rules! llvm_inner_impl {
 
 macro_rules! const_func {
     ($x:ident($(& $amp:ident$(,)?)? $($n:ident : $t:ty),*$(,)?) $b:block) => {
-        pub fn $x<'b>($($amp,)? $($n : $t),*) -> Result<Value<'b>, Error> {
+        pub fn $x<'b>($($amp,)? $($n : $t),*) -> Result<Const<'b>, Error> {
             unsafe {
-                Value::from_inner($b)
+                Ok(Const(Value::from_inner($b)?))
             }
         }
     }

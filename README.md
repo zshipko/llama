@@ -11,3 +11,9 @@ Goals:
 ## Building
 
 `build.rs` will look for either an executable in the path named `llvm-config` or an environment variable named `LLVM_CONFIG` for setting the correct `llvm-config` executable.
+
+## Documentation
+
+- [llama](https://zshipko.github.io/llama/llama)
+- [llama-build](https://zshipko.github.io/llama/llam-build)
+- [llama-wasm](https://zshipko.github.io/llama/llam-wasm)

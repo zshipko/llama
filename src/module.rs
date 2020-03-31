@@ -1,5 +1,6 @@
 use crate::*;
 
+/// Wraps LLVMModule
 pub struct Module<'a>(NonNull<llvm::LLVMModule>, PhantomData<&'a ()>);
 
 llvm_inner_impl!(Module<'a>, llvm::LLVMModule);
@@ -32,6 +33,7 @@ impl<'a> Module<'a> {
         Ok(Module(m, PhantomData))
     }
 
+    /// Get the associated context
     pub fn context(&self) -> Result<Context<'a>, Error> {
         let ctx = unsafe { wrap_inner(llvm::core::LLVMGetModuleContext(self.llvm()))? };
         Ok(Context(ctx, false, PhantomData))
@@ -143,6 +145,7 @@ impl<'a> Module<'a> {
         Ok(())
     }
 
+    /// Define a new function without declaring a function body
     pub fn define_function(
         &mut self,
         name: impl AsRef<str>,
@@ -154,6 +157,7 @@ impl<'a> Module<'a> {
         Ok(Func(Value::from_inner(value)?))
     }
 
+    /// Declare a new function with function body
     pub fn declare_function<T: Into<Value<'a>>, F: FnOnce(&Func<'a>) -> Result<T, Error>>(
         &mut self,
         builder: &Builder<'a>,
@@ -165,6 +169,7 @@ impl<'a> Module<'a> {
         builder.function_body(f, |_, _| def(&f))
     }
 
+    /// Create a new global
     pub fn global(
         &mut self,
         name: impl AsRef<str>,
@@ -176,6 +181,7 @@ impl<'a> Module<'a> {
         Ok(Value::from_inner(value)?)
     }
 
+    /// Create a new global in the given address space
     pub fn global_in_address_space(
         &mut self,
         name: impl AsRef<str>,
@@ -194,32 +200,38 @@ impl<'a> Module<'a> {
         Ok(Func(Value::from_inner(value)?))
     }
 
+    /// Get a function by name
     pub fn named_function(&self, name: impl AsRef<str>) -> Result<Func<'a>, Error> {
         let name = cstr!(name.as_ref());
         let value = unsafe { llvm::core::LLVMGetNamedFunction(self.llvm(), name.as_ptr()) };
         Ok(Func(Value::from_inner(value)?))
     }
 
+    /// Get the first global
     pub fn first_global(&self) -> Result<Value<'a>, Error> {
         let value = unsafe { llvm::core::LLVMGetFirstGlobal(self.llvm()) };
         Value::from_inner(value)
     }
 
+    /// Get the last global
     pub fn last_global(&self) -> Result<Value<'a>, Error> {
         let value = unsafe { llvm::core::LLVMGetLastGlobal(self.llvm()) };
         Value::from_inner(value)
     }
 
+    /// Get the next global
     pub fn next_global(&self, global: impl AsRef<Value<'a>>) -> Result<Value<'a>, Error> {
         let value = unsafe { llvm::core::LLVMGetNextGlobal(global.as_ref().llvm()) };
         Value::from_inner(value)
     }
 
+    /// Get the first function
     pub fn first_function(&self) -> Result<Func<'a>, Error> {
         let value = unsafe { llvm::core::LLVMGetFirstFunction(self.llvm()) };
         Ok(Func(Value::from_inner(value)?))
     }
 
+    /// Get the last function
     pub fn last_function(&self) -> Result<Func<'a>, Error> {
         let value = unsafe { llvm::core::LLVMGetLastFunction(self.llvm()) };
         Ok(Func(Value::from_inner(value)?))
@@ -296,20 +308,24 @@ impl<'a> Module<'a> {
         }
     }
 
+    /// Get type by name
     pub fn type_by_name(&self, name: impl AsRef<str>) -> Result<Type<'a>, Error> {
         let name = cstr!(name.as_ref());
         unsafe { Type::from_inner(llvm::core::LLVMGetTypeByName(self.llvm(), name.as_ptr())) }
     }
 
+    /// Set WASM32 target/data layout
     pub fn set_wasm32(&mut self) {
         self.set_target("wasm32");
         self.set_data_layout("p:32:32:32");
     }
 
+    /// Set target data
     pub fn set_target_data(&mut self, target: &TargetData) {
         unsafe { llvm::target::LLVMSetModuleDataLayout(self.llvm(), target.llvm()) }
     }
 
+    /// Get target data
     pub fn target_data(&self) -> Result<TargetData, Error> {
         let x = unsafe { llvm::target::LLVMGetModuleDataLayout(self.llvm()) };
         TargetData::from_inner(x)

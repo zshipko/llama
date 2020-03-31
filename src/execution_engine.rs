@@ -1,5 +1,6 @@
 use crate::*;
 
+/// An execution engine can be used to execute JIT compiled code
 pub struct ExecutionEngine<'a>(
     NonNull<llvm::execution_engine::LLVMOpaqueExecutionEngine>,
     PhantomData<&'a ()>,
@@ -17,6 +18,7 @@ impl<'a> Drop for ExecutionEngine<'a> {
 }
 
 impl<'a> ExecutionEngine<'a> {
+    /// Create a new execution engine using `LLVMCreateExectionEngine`
     pub fn new(module: &Module<'a>) -> Result<ExecutionEngine<'a>, Error> {
         unsafe { llvm::execution_engine::LLVMLinkInInterpreter() }
 
@@ -38,6 +40,7 @@ impl<'a> ExecutionEngine<'a> {
         Ok(ExecutionEngine(wrap_inner(engine)?, PhantomData))
     }
 
+    /// Create new JIT compiler with optimization level
     pub fn new_jit(module: &Module<'a>, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
         unsafe { llvm::execution_engine::LLVMLinkInMCJIT() }
 
@@ -60,6 +63,7 @@ impl<'a> ExecutionEngine<'a> {
         Ok(ExecutionEngine(wrap_inner(engine)?, PhantomData))
     }
 
+    /// Create new MCJIT compiler with optimization level
     pub fn new_mcjit(module: &Module<'a>, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
         unsafe { llvm::execution_engine::LLVMLinkInMCJIT() }
 
@@ -126,18 +130,22 @@ impl<'a> ExecutionEngine<'a> {
         Ok(&mut *(ptr as *mut T))
     }
 
+    /// Run static constructors
     pub fn run_static_constructors(&self) {
         unsafe { llvm::execution_engine::LLVMRunStaticConstructors(self.llvm()) }
     }
 
+    /// Run static destructors
     pub fn run_static_destructors(&self) {
         unsafe { llvm::execution_engine::LLVMRunStaticDestructors(self.llvm()) }
     }
 
+    /// Add an existing module
     pub fn add_module(&mut self, module: &Module<'a>) {
         unsafe { llvm::execution_engine::LLVMAddModule(self.llvm(), module.llvm()) }
     }
 
+    /// Add mapping between global value and a local object
     pub fn add_global_mapping<T>(&mut self, global: impl AsRef<Value<'a>>, data: &'a T) {
         unsafe {
             llvm::execution_engine::LLVMAddGlobalMapping(
@@ -148,6 +156,7 @@ impl<'a> ExecutionEngine<'a> {
         }
     }
 
+    /// Get target data
     pub fn target_data(&self) -> Result<TargetData, Error> {
         let x = unsafe { llvm::execution_engine::LLVMGetExecutionEngineTargetData(self.llvm()) };
         TargetData::from_inner(x)

@@ -1,5 +1,5 @@
 #![allow(clippy::should_implement_trait)]
-//#![deny(missing_docs)]
+#![deny(missing_docs)]
 
 //! `llama` is a friendly LLVM wrapper
 //!

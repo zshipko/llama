@@ -162,7 +162,7 @@ impl<'a> Const<'a> {
         let v = unsafe {
             llvm::core::LLVMConstStructInContext(ctx.llvm(), vals.as_mut_ptr(), len as c_uint, 0)
         };
-        Value::from_inner(v)?.into_const()
+        Value::from_inner(v)?.to_const()
     }
 
     pub fn crate_packed_struct(
@@ -174,7 +174,7 @@ impl<'a> Const<'a> {
         let v = unsafe {
             llvm::core::LLVMConstStructInContext(ctx.llvm(), vals.as_mut_ptr(), len as c_uint, 1)
         };
-        Value::from_inner(v)?.into_const()
+        Value::from_inner(v)?.to_const()
     }
 
     pub fn create_named_struct(
@@ -186,7 +186,7 @@ impl<'a> Const<'a> {
         let v = unsafe {
             llvm::core::LLVMConstNamedStruct(t.as_ref().llvm(), vals.as_mut_ptr(), len as c_uint)
         };
-        Value::from_inner(v)?.into_const()
+        Value::from_inner(v)?.to_const()
     }
 
     pub fn create_array(
@@ -198,14 +198,14 @@ impl<'a> Const<'a> {
         let v = unsafe {
             llvm::core::LLVMConstArray(t.as_ref().llvm(), vals.as_mut_ptr(), len as c_uint)
         };
-        Value::from_inner(v)?.into_const()
+        Value::from_inner(v)?.to_const()
     }
 
     pub fn create_vector(vals: impl AsRef<[Value<'a>]>) -> Result<Const<'a>, Error> {
         let len = vals.as_ref().len();
         let mut vals: Vec<*mut llvm::LLVMValue> = vals.as_ref().iter().map(|x| x.llvm()).collect();
         let v = unsafe { llvm::core::LLVMConstVector(vals.as_mut_ptr(), len as c_uint) };
-        Value::from_inner(v)?.into_const()
+        Value::from_inner(v)?.to_const()
     }
 
     pub fn op_code(self) -> OpCode {
@@ -213,27 +213,23 @@ impl<'a> Const<'a> {
     }
 
     pub fn neg(self) -> Result<Const<'a>, Error> {
-        unsafe { Value::from_inner(llvm::core::LLVMConstNeg(self.as_ref().llvm()))?.into_const() }
+        unsafe { Value::from_inner(llvm::core::LLVMConstNeg(self.as_ref().llvm()))?.to_const() }
     }
 
     pub fn nsw_neg(self) -> Result<Const<'a>, Error> {
-        unsafe {
-            Value::from_inner(llvm::core::LLVMConstNSWNeg(self.as_ref().llvm()))?.into_const()
-        }
+        unsafe { Value::from_inner(llvm::core::LLVMConstNSWNeg(self.as_ref().llvm()))?.to_const() }
     }
 
     pub fn nuw_neg(self) -> Result<Const<'a>, Error> {
-        unsafe {
-            Value::from_inner(llvm::core::LLVMConstNUWNeg(self.as_ref().llvm()))?.into_const()
-        }
+        unsafe { Value::from_inner(llvm::core::LLVMConstNUWNeg(self.as_ref().llvm()))?.to_const() }
     }
 
     pub fn fneg(self) -> Result<Const<'a>, Error> {
-        unsafe { Value::from_inner(llvm::core::LLVMConstFNeg(self.as_ref().llvm()))?.into_const() }
+        unsafe { Value::from_inner(llvm::core::LLVMConstFNeg(self.as_ref().llvm()))?.to_const() }
     }
 
     pub fn not(self) -> Result<Const<'a>, Error> {
-        unsafe { Value::from_inner(llvm::core::LLVMConstNot(self.as_ref().llvm())) }?.into_const()
+        unsafe { Value::from_inner(llvm::core::LLVMConstNot(self.as_ref().llvm())) }?.to_const()
     }
 
     pub fn add(self, other: Const<'a>) -> Result<Const<'a>, Error> {
@@ -242,7 +238,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -252,7 +248,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -262,7 +258,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -272,7 +268,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -282,7 +278,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -292,7 +288,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -302,7 +298,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -312,7 +308,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -322,7 +318,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -332,7 +328,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -342,7 +338,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -352,7 +348,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -362,7 +358,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -372,7 +368,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -382,7 +378,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -392,7 +388,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -402,7 +398,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -412,7 +408,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -422,7 +418,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -432,7 +428,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -442,7 +438,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -452,7 +448,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -462,7 +458,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -473,7 +469,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -484,7 +480,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -494,7 +490,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -504,7 +500,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -514,7 +510,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 other.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -527,7 +523,7 @@ impl<'a> Const<'a> {
                 i.as_mut_ptr(),
                 len as c_uint,
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -545,7 +541,7 @@ impl<'a> Const<'a> {
                 i.as_mut_ptr(),
                 len as c_uint,
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -558,7 +554,7 @@ impl<'a> Const<'a> {
                 i.as_mut_ptr(),
                 len as c_uint,
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -576,7 +572,7 @@ impl<'a> Const<'a> {
                 i.as_mut_ptr(),
                 len as c_uint,
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -586,7 +582,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 t.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -596,7 +592,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 t.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -606,7 +602,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 t.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -616,7 +612,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 t.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -626,7 +622,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 t.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -636,7 +632,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 t.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -646,7 +642,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 t.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -656,7 +652,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 t.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -666,7 +662,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 t.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -676,7 +672,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 t.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -686,7 +682,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 t.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -696,7 +692,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 t.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -706,7 +702,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 t.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -716,7 +712,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 t.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -726,7 +722,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 t.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 
@@ -736,7 +732,7 @@ impl<'a> Const<'a> {
                 self.as_ref().llvm(),
                 t.as_ref().llvm(),
             ))?
-            .into_const()
+            .to_const()
         }
     }
 

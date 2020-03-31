@@ -1,5 +1,6 @@
 use crate::*;
 
+/// Metadata values
 #[derive(Clone, Copy)]
 pub struct Metadata<'a>(pub(crate) Value<'a>);
 
@@ -53,6 +54,7 @@ impl<'a> Metadata<'a> {
         }
     }
 
+    /// Get string value
     pub fn as_str(self) -> Result<&'a str, Error> {
         unsafe {
             let mut len = 0;
@@ -67,6 +69,7 @@ impl<'a> Metadata<'a> {
         }
     }
 
+    /// Get node value
     pub fn node(self) -> Vec<Metadata<'a>> {
         unsafe {
             let len = llvm::core::LLVMGetMDNodeNumOperands(self.as_ref().llvm());

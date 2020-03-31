@@ -74,12 +74,14 @@ impl<'a> Context<'a> {
         Ok(Context(ctx, false, PhantomData))
     }
 
+    /// Allow context to discard value names, this can be used to save on runtime allocations
     pub fn set_discard_value_names(&mut self, discard: bool) {
         unsafe {
             llvm::core::LLVMContextSetDiscardValueNames(self.llvm(), if discard { 1 } else { 0 })
         }
     }
 
+    /// Returns true when the context is set to discard value names
     pub fn discard_value_names(&mut self) -> bool {
         unsafe { llvm::core::LLVMContextShouldDiscardValueNames(self.llvm()) == 1 }
     }
@@ -97,12 +99,14 @@ impl<'a> Context<'a> {
         BasicBlock::from_inner(bb)
     }
 
+    /// Get metadata kind ID
     pub fn md_kind_id(&self, name: impl AsRef<str>) -> u32 {
         let len = name.as_ref().len();
         let name = cstr!(name.as_ref());
         unsafe { llvm::core::LLVMGetMDKindIDInContext(self.llvm(), name.as_ptr(), len as u32) }
     }
 
+    /// Get enum attribute kind ID
     pub fn enum_attribute_kind_for_name(&self, name: impl AsRef<str>) -> u32 {
         let len = name.as_ref().len();
         let name = cstr!(name.as_ref());

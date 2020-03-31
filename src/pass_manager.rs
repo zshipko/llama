@@ -1,13 +1,20 @@
 use crate::*;
 
+/// PassManager for module optimizations
 pub struct ModulePassManager<'a>(NonNull<llvm::LLVMPassManager>, PhantomData<&'a ()>);
+
+/// PassManager for function optimizations
 pub struct FuncPassManager<'a>(NonNull<llvm::LLVMPassManager>, PhantomData<&'a ()>);
 
+/// PassManager trait is used to define common functionality between the two types of PassManagers
 pub trait PassManager: LLVM<llvm::LLVMPassManager> {
+    /// Kind is used to designate the kind of value that can be optimized using this PassManager
     type Kind;
 
+    /// Run configured optimization passes
     fn run(&self, f: &Self::Kind) -> bool;
 
+    /// Add optimization passes
     fn add(&self, transforms: impl AsRef<[Transform]>) {
         for transform in transforms.as_ref().iter() {
             unsafe { transform(self.llvm()) }
@@ -18,6 +25,7 @@ pub trait PassManager: LLVM<llvm::LLVMPassManager> {
 llvm_inner_impl!(ModulePassManager<'a>, llvm::LLVMPassManager);
 llvm_inner_impl!(FuncPassManager<'a>, llvm::LLVMPassManager);
 
+/// An optimization pass
 pub type Transform = unsafe extern "C" fn(_: *mut llvm::LLVMPassManager);
 
 pub use llvm::transforms;
@@ -35,6 +43,7 @@ impl<'a> Drop for FuncPassManager<'a> {
 }
 
 impl<'a> FuncPassManager<'a> {
+    /// Create new function pass manager
     pub fn new() -> Result<FuncPassManager<'a>, Error> {
         let ptr = unsafe { llvm::core::LLVMCreatePassManager() };
 
@@ -43,6 +52,7 @@ impl<'a> FuncPassManager<'a> {
 }
 
 impl<'a> ModulePassManager<'a> {
+    /// Create new module pass manager
     pub fn new(module: &Module<'a>) -> Result<ModulePassManager<'a>, Error> {
         let ptr = unsafe { llvm::core::LLVMCreateFunctionPassManagerForModule(module.llvm()) };
 

@@ -1,6 +1,6 @@
 # llama
 
-A friendly LLVM library for Rust
+A friendly LLVM library for Rust.
 
 Goals:
 - Support the latest `llvm-sys` release

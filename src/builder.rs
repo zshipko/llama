@@ -796,8 +796,8 @@ impl<'a> Builder<'a> {
         &self,
         val: impl AsRef<Value<'a>>,
         ty: impl AsRef<Type<'a>>,
-        name: impl AsRef<str>,
         signed: bool,
+        name: impl AsRef<str>,
     ) {
         let name = cstr!(name.as_ref());
         llvm::core::LLVMBuildIntCast2(

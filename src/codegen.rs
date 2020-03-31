@@ -2,6 +2,7 @@ use crate::*;
 
 use std::sync::Mutex;
 
+/// Platform-specific machine code
 pub struct Codegen(Vec<u8>, Vec<String>, Binary);
 
 impl AsRef<[u8]> for Codegen {
@@ -21,6 +22,7 @@ lazy_static::lazy_static! {
 }
 
 impl Codegen {
+    /// Create new `Codegen` context
     pub fn new<'a>(
         module: &Module,
         symbols: impl AsRef<[&'a str]>,
@@ -109,6 +111,7 @@ impl Codegen {
         unsafe { llvm::lto::lto_codegen_add_must_preserve_symbol(lto, name.as_ptr()) }
     }
 
+    /// Get a list of exported symbols
     pub fn symbols(&self) -> &Vec<String> {
         &self.1
     }

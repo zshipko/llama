@@ -13,6 +13,7 @@ impl<'a> Clone for BasicBlock<'a> {
 }
 
 impl<'a> BasicBlock<'a> {
+    /// Wrap a raw pointer
     pub fn from_inner(ptr: *mut llvm::LLVMBasicBlock) -> Result<Self, Error> {
         Ok(BasicBlock(wrap_inner(ptr)?, PhantomData))
     }

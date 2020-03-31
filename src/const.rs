@@ -1,5 +1,8 @@
+#![allow(missing_docs)]
+
 use crate::*;
 
+/// Constant values
 #[derive(Clone, Copy)]
 pub struct Const<'a>(pub(crate) Value<'a>);
 

@@ -1,4 +1,30 @@
 #![allow(clippy::should_implement_trait)]
+//#![deny(missing_docs)]
+
+//! `llama` is a friendly LLVM wrapper
+//!
+//! # Getting started
+//! ```rust
+//! use llama::*;
+//! fn main() -> Result<(), Error> {
+//!     let ctx = Context::new()?;
+//!     let mut module_ = Module::new(&ctx, "my_module")?;
+//!     let builder = Builder::new(&ctx)?;
+//!
+//!     let i32 = Type::i32(&ctx)?;
+//!
+//!     let example_t = FuncType::new(i32, &[i32, i32])?;
+//!     module_.declare_function(&builder, "example", example_t, |f| {
+//!         let params = f.params();
+//!         let r = builder.add(params[0], params[1], "add")?;
+//!         builder.ret(r)
+//!     })?;
+//!
+//!     println!("{}", module_);
+//!     Ok(())
+//! }
+//! ```
+//!
 
 #[allow(non_snake_case)]
 macro_rules! cstr {
@@ -71,6 +97,7 @@ pub(crate) use std::marker::PhantomData;
 pub(crate) use std::os::raw::{c_char, c_int, c_uint};
 pub(crate) use std::ptr::NonNull;
 
+/// Re-export `llvm_sys` to provide access to any missing functionality
 pub use llvm_sys as llvm;
 
 pub use crate::attribute::Attribute;
@@ -136,6 +163,7 @@ impl Message {
         unsafe { strlen(self.0) }
     }
 
+    /// Returns true when the message is empty
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -236,6 +264,7 @@ impl MemoryBuffer {
         unsafe { llvm::core::LLVMGetBufferSize(self.0.as_ptr()) }
     }
 
+    /// Returns true when the buffer is empty
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -264,6 +293,7 @@ impl Drop for MemoryBuffer {
     }
 }
 
+/// Load a shared library
 pub fn load_library(filename: impl AsRef<std::path::Path>) -> bool {
     let filename = cstr!(filename
         .as_ref()
@@ -272,11 +302,13 @@ pub fn load_library(filename: impl AsRef<std::path::Path>) -> bool {
     unsafe { llvm::support::LLVMLoadLibraryPermanently(filename.as_ptr()) == 0 }
 }
 
+/// Add a symbol
 pub fn add_symbol<T>(filename: impl AsRef<str>, x: &mut T) {
     let filename = cstr!(filename.as_ref());
     unsafe { llvm::support::LLVMAddSymbol(filename.as_ptr(), x as *mut T as *mut c_void) }
 }
 
+/// Get the default target triple
 pub fn default_target_triple() -> &'static str {
     unsafe {
         let ptr = llvm::target_machine::LLVMGetDefaultTargetTriple();

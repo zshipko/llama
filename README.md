@@ -15,5 +15,5 @@ Goals:
 ## Documentation
 
 - [llama](https://zshipko.github.io/llama/llama)
-- [llama-build](https://zshipko.github.io/llama/llama-build)
-- [llama-wasm](https://zshipko.github.io/llama/llama-wasm)
+- [llama-build](https://zshipko.github.io/llama/llama_build)
+- [llama-wasm](https://zshipko.github.io/llama/llama_wasm)

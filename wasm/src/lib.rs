@@ -15,16 +15,19 @@ pub enum Error {
     Lightbeam(String),
 }
 
+/// Exectuable module type
 pub use lightbeam::ExecutableModule as Exec;
 
+/// WASM context
 pub struct Wasm<'a> {
     exec: Exec,
     func_map: BTreeMap<String, usize>,
-    pub module: &'a llama::Module<'a>,
-    pub codegen: llama::Codegen,
+    _module: &'a llama::Module<'a>,
+    _codegen: llama::Codegen,
 }
 
 impl<'a> Wasm<'a> {
+    /// Create a new WASM context with the given LLVM module and export names
     pub fn new<'b>(
         module: &'a llama::Module,
         exports: impl AsRef<[&'b str]>,
@@ -51,22 +54,26 @@ impl<'a> Wasm<'a> {
         let exec = lightbeam::translate(codegen.as_ref())
             .map_err(|x| Error::Lightbeam(format!("{:?}", x)))?;
         Ok(Wasm {
-            module,
-            codegen,
+            _module: module,
+            _codegen: codegen,
             exec,
             func_map,
         })
     }
 
+    /// Get index of named export
     pub fn index(&self, name: impl AsRef<str>) -> Option<u32> {
         self.func_map.get(name.as_ref()).map(|x| *x as u32)
     }
 
+    /// Get
     pub fn exec(&self) -> &Exec {
         &self.exec
     }
 }
 
+/// Call a function within a WASM context:
+/// call!(module_name.function_name(i32, i64))
 #[macro_export]
 macro_rules! call {
     ($wasm:ident.$name:ident($($arg:expr),*$(,)?)) => {

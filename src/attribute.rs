@@ -1,5 +1,6 @@
 use crate::*;
 
+/// LLVM Attribute
 pub struct Attribute<'a>(NonNull<llvm::LLVMOpaqueAttributeRef>, PhantomData<&'a ()>);
 
 llvm_inner_impl!(Attribute<'a>, llvm::LLVMOpaqueAttributeRef);
@@ -30,19 +31,20 @@ impl<'a> Attribute<'a> {
 
     /// Create an enum attribute
     pub fn new_enum(ctx: &Context<'a>, k: u32, v: u64) -> Result<Attribute<'a>, Error> {
-        unsafe {
-            Attribute::from_inner(llvm::core::LLVMCreateEnumAttribute(ctx.llvm(), k, v))
-        }
+        unsafe { Attribute::from_inner(llvm::core::LLVMCreateEnumAttribute(ctx.llvm(), k, v)) }
     }
 
+    /// Returns true when the attribute is an enum
     pub fn is_enum(&self) -> bool {
         unsafe { llvm::core::LLVMIsEnumAttribute(self.llvm()) == 1 }
     }
 
+    /// Returns true when the attribute is a string
     pub fn is_string(&self) -> bool {
         unsafe { llvm::core::LLVMIsStringAttribute(self.llvm()) == 1 }
     }
 
+    /// Get string attribute kind
     pub fn string_kind(&self) -> Option<&str> {
         if !self.is_string() {
             return None;
@@ -57,6 +59,7 @@ impl<'a> Attribute<'a> {
         }
     }
 
+    /// Get string attribute value
     pub fn string_value(&self) -> Option<&str> {
         if !self.is_string() {
             return None;
@@ -71,6 +74,7 @@ impl<'a> Attribute<'a> {
         }
     }
 
+    /// Get enum attribute kind
     pub fn enum_kind(&self) -> Option<i32> {
         if !self.is_enum() {
             return None;
@@ -78,6 +82,7 @@ impl<'a> Attribute<'a> {
         unsafe { Some(llvm::core::LLVMGetEnumAttributeKind(self.llvm()) as i32) }
     }
 
+    /// Get enum attribute value
     pub fn enum_value(&self) -> Option<u64> {
         if !self.is_enum() {
             return None;

@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use crate::*;
 
 /// A `Builder` is used to create `Instruction`s
@@ -51,12 +53,14 @@ impl<'a> Builder<'a> {
         &self.1
     }
 
+    /// Position builder at end of block
     pub fn position_at_end(&self, block: BasicBlock<'a>) {
         unsafe { llvm::core::LLVMPositionBuilderAtEnd(self.llvm(), block.llvm()) }
     }
 
-    pub fn position_before(&self, value: Value<'a>) {
-        unsafe { llvm::core::LLVMPositionBuilderBefore(self.llvm(), value.llvm()) }
+    /// Position builder before instruction
+    pub fn position_before(&self, value: Instr<'a>) {
+        unsafe { llvm::core::LLVMPositionBuilderBefore(self.llvm(), value.as_ref().llvm()) }
     }
 
     /// Clear insertion position
@@ -69,6 +73,7 @@ impl<'a> Builder<'a> {
         unsafe { BasicBlock::from_inner(llvm::core::LLVMGetInsertBlock(self.llvm())) }
     }
 
+    /// Declare the body of a function
     pub fn function_body<
         T: Into<Value<'a>>,
         F: FnOnce(&Self, BasicBlock<'a>) -> Result<T, Error>,

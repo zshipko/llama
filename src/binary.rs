@@ -1,5 +1,6 @@
 use crate::*;
 
+/// Binary is used to store compiled binary objects
 pub struct Binary(NonNull<llvm::object::LLVMOpaqueBinary>);
 
 llvm_inner_impl!(Binary, llvm::object::LLVMOpaqueBinary);
@@ -14,9 +15,7 @@ impl<'a> Binary {
     /// Create a new binary object
     pub fn new(ctx: &Context, data: &MemoryBuffer) -> Result<Binary, Error> {
         let mut message = std::ptr::null_mut();
-        let bin = unsafe {
-            llvm::object::LLVMCreateBinary(data.llvm(), ctx.llvm(), &mut message)
-        };
+        let bin = unsafe { llvm::object::LLVMCreateBinary(data.llvm(), ctx.llvm(), &mut message) };
 
         let message = Message::from_raw(message);
 

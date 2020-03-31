@@ -23,10 +23,10 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install deps
-      run: brew update && brew install llvm && ln -sf /usr/local/opt/llvm/bin/llvm-config /usr/local/bin/llvm-config
+      run: brew update && brew install llvm@10 && ln -sf /usr/local/opt/llvm/bin/llvm-config /usr/local/bin/llvm-config
 
     - name: Run tests
-      run: LLVM_CONFIG=/usr/local/opt/llvm/bin/llvm-config cargo test --verbose --all-features
+      run: cargo test --verbose --all-features
   all_linux_nightly:
     runs-on: ubuntu-latest
     steps:
@@ -46,13 +46,13 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install deps
-      run: brew update && brew install llvm && ln -sf /usr/local/opt/llvm/bin/llvm-config /usr/local/bin/llvm-config
+      run: brew update && brew install llvm@10 && ln -sf /usr/local/opt/llvm/bin/llvm-config /usr/local/bin/llvm-config
 
     - name: Nightly
       run: rustup toolchain install nightly
 
     - name: Run tests
-      run: LLVM_CONFIG=/usr/local/opt/llvm/bin/llvm-config cargo +nightly test --verbose --all-features --all
+      run: cargo +nightly test --verbose --all-features --all
   clippy:
     runs-on: ubuntu-latest
     steps:

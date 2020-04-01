@@ -99,7 +99,7 @@ impl<'a> ExecutionEngine<'a> {
     /// # Safety
     /// This function does nothing to ensure that the function actually matches the type you give
     /// it
-    pub unsafe fn function<T: Copy>(&self, name: impl AsRef<str>) -> Result<T, Error> {
+    pub unsafe fn function<T: 'a + Copy>(&self, name: impl AsRef<str>) -> Result<T, Error> {
         let name = cstr!(name.as_ref());
         let ptr = llvm::execution_engine::LLVMGetFunctionAddress(self.llvm(), name.as_ptr());
 
@@ -123,7 +123,7 @@ impl<'a> ExecutionEngine<'a> {
     /// # Safety
     /// This function does nothing to ensure that the function actually matches the type you give
     /// it
-    pub unsafe fn global<T>(&self, global: impl AsRef<Value<'a>>) -> Result<&mut T, Error> {
+    pub unsafe fn global<T: 'a>(&self, global: impl AsRef<Value<'a>>) -> Result<*mut T, Error> {
         let ptr =
             llvm::execution_engine::LLVMGetPointerToGlobal(self.llvm(), global.as_ref().llvm());
 
@@ -146,12 +146,12 @@ impl<'a> ExecutionEngine<'a> {
     }
 
     /// Add mapping between global value and a local object
-    pub fn add_global_mapping<T>(&mut self, global: impl AsRef<Value<'a>>, data: &'a T) {
+    pub fn add_global_mapping<T: 'a>(&mut self, global: impl AsRef<Value<'a>>, data: *mut T) {
         unsafe {
             llvm::execution_engine::LLVMAddGlobalMapping(
                 self.llvm(),
                 global.as_ref().llvm(),
-                data as *const T as *mut c_void,
+                data as *mut c_void,
             )
         }
     }

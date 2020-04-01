@@ -161,9 +161,19 @@ pub fn load_library(filename: impl AsRef<std::path::Path>) -> bool {
 }
 
 /// Add a symbol
-pub fn add_symbol<T>(filename: impl AsRef<str>, x: &mut T) {
-    let filename = cstr!(filename.as_ref());
-    unsafe { llvm::support::LLVMAddSymbol(filename.as_ptr(), x as *mut T as *mut c_void) }
+pub fn add_symbol<T>(name: impl AsRef<str>, x: *mut T) {
+    let name = cstr!(name.as_ref());
+    unsafe { llvm::support::LLVMAddSymbol(name.as_ptr(), x as *mut c_void) }
+}
+
+#[macro_export]
+/// Add symbols to the global namespace
+macro_rules! symbol {
+    ($($name:ident),*) => {
+        $(
+            $crate::add_symbol(stringify!($name), $name as *mut c_void);
+        )*
+    }
 }
 
 /// Get the default target triple

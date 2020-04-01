@@ -108,3 +108,49 @@ fn for_loop() -> Result<(), Error> {
 
     Ok(())
 }
+
+extern "C" fn testing123() -> i32 {
+    123
+}
+
+extern "C" fn testing1234() -> i32 {
+    1234
+}
+
+#[test]
+fn test_add_symbol() -> Result<(), Error> {
+    let ctx = Context::new()?;
+    let mut module = Module::new(&ctx, "test_add_symbol")?;
+    let build = Builder::new(&ctx)?;
+
+    symbol!(testing123, testing1234);
+
+    let i32 = Type::int(&ctx, 32)?;
+    let testing123_t = FuncType::new(i32, &[])?;
+    let testing123 = module.define_function("testing123", testing123_t)?;
+
+    let testing1234 = module.define_function("testing1234", testing123_t)?;
+
+    let ft = FuncType::new(i32, &[])?;
+    module.declare_function(&build, "testing", ft, |_| {
+        build.ret(build.call(&testing123, &[], "call")?)
+    })?;
+
+    module.declare_function(&build, "testing1", ft, |_| {
+        build.ret(build.call(&testing1234, &[], "call")?)
+    })?;
+
+    let engine = ExecutionEngine::new(&module)?;
+    let testing: extern "C" fn() -> i32 = unsafe { engine.function("testing")? };
+    let testing1: extern "C" fn() -> i32 = unsafe { engine.function("testing1")? };
+    let x = testing();
+    let y = testing1();
+
+    println!("{}", x);
+    assert_eq!(x, 123);
+
+    println!("{}", y);
+    assert_eq!(y, 1234);
+
+    Ok(())
+}

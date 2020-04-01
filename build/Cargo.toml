@@ -3,6 +3,11 @@ name = "llama-build"
 version = "0.1.0"
 authors = ["Zach Shipko <zachshipko@gmail.com>"]
 edition = "2018"
+README = "../README.md"
+repository = "https://github.com/zshipko/llama"
+documentation = "https://zshipko.github.io/llama/llama_build"
+description = "Friendly LLVM bindings (BUILD)"
+keywords = ["LLVM", "build"]
 
 [dependencies]
 cc = "1"

@@ -19,7 +19,7 @@ impl<'a> Drop for ExecutionEngine<'a> {
 
 impl<'a> ExecutionEngine<'a> {
     /// Create a new execution engine using `LLVMCreateExectionEngine`
-    pub fn new(module: &Module<'a>) -> Result<ExecutionEngine<'a>, Error> {
+    pub fn new(module: Module<'a>) -> Result<ExecutionEngine<'a>, Error> {
         unsafe { llvm::execution_engine::LLVMLinkInInterpreter() }
 
         let mut engine = std::ptr::null_mut();
@@ -40,31 +40,8 @@ impl<'a> ExecutionEngine<'a> {
         Ok(ExecutionEngine(wrap_inner(engine)?, PhantomData))
     }
 
-    /// Create new JIT compiler with optimization level
-    pub fn new_jit(module: &Module<'a>, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
-        unsafe { llvm::execution_engine::LLVMLinkInMCJIT() }
-
-        let mut engine = std::ptr::null_mut();
-        let mut message = std::ptr::null_mut();
-        let r = unsafe {
-            llvm::execution_engine::LLVMCreateJITCompilerForModule(
-                &mut engine,
-                llvm::core::LLVMCloneModule(module.llvm()),
-                opt as u32,
-                &mut message,
-            ) == 1
-        };
-
-        let message = Message::from_raw(message);
-        if r {
-            return Err(Error::Message(message));
-        }
-
-        Ok(ExecutionEngine(wrap_inner(engine)?, PhantomData))
-    }
-
     /// Create new MCJIT compiler with optimization level
-    pub fn new_mcjit(module: &Module<'a>, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
+    pub fn new_jit(module: Module<'a>, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
         unsafe { llvm::execution_engine::LLVMLinkInMCJIT() }
 
         let mut opts = llvm::execution_engine::LLVMMCJITCompilerOptions {
@@ -141,8 +118,13 @@ impl<'a> ExecutionEngine<'a> {
     }
 
     /// Add an existing module
-    pub fn add_module(&mut self, module: &Module<'a>) {
-        unsafe { llvm::execution_engine::LLVMAddModule(self.llvm(), module.llvm()) }
+    pub fn add_module(&self, module: Module<'a>) {
+        unsafe {
+            llvm::execution_engine::LLVMAddModule(
+                self.llvm(),
+                llvm::core::LLVMCloneModule(module.llvm()),
+            )
+        }
     }
 
     /// Add mapping between global value and a local object

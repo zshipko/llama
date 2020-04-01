@@ -146,11 +146,7 @@ impl<'a> Module<'a> {
     }
 
     /// Define a new function without declaring a function body
-    pub fn define_function(
-        &mut self,
-        name: impl AsRef<str>,
-        t: FuncType,
-    ) -> Result<Func<'a>, Error> {
+    pub fn define_function(&self, name: impl AsRef<str>, t: FuncType) -> Result<Func<'a>, Error> {
         let name = cstr!(name.as_ref());
         let value =
             unsafe { llvm::core::LLVMAddFunction(self.llvm(), name.as_ptr(), t.as_ref().llvm()) };
@@ -159,7 +155,7 @@ impl<'a> Module<'a> {
 
     /// Declare a new function with function body
     pub fn declare_function<T: Into<Value<'a>>, F: FnOnce(&Func<'a>) -> Result<T, Error>>(
-        &mut self,
+        &self,
         builder: &Builder<'a>,
         name: impl AsRef<str>,
         ft: FuncType,
@@ -171,7 +167,7 @@ impl<'a> Module<'a> {
 
     /// Create a new global
     pub fn global(
-        &mut self,
+        &self,
         name: impl AsRef<str>,
         t: impl AsRef<Type<'a>>,
     ) -> Result<Value<'a>, Error> {
@@ -183,7 +179,7 @@ impl<'a> Module<'a> {
 
     /// Create a new global in the given address space
     pub fn global_in_address_space(
-        &mut self,
+        &self,
         name: impl AsRef<str>,
         t: impl AsRef<Type<'a>>,
         addr: usize,

@@ -171,7 +171,7 @@ pub fn add_symbol<T>(name: impl AsRef<str>, x: *mut T) {
 macro_rules! symbol {
     ($($name:ident),*) => {
         $(
-            $crate::add_symbol(stringify!($name), $name as *mut c_void);
+            $crate::add_symbol(stringify!($name), $name as *mut std::ffi::c_void);
         )*
     }
 }

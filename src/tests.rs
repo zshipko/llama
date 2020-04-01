@@ -3,7 +3,7 @@ use crate::*;
 #[test]
 fn codegen() -> Result<(), Error> {
     let context = Context::new()?;
-    let mut module = Module::new(&context, "test_codegen")?;
+    let module = Module::new(&context, "test_codegen")?;
 
     let builder = Builder::new(&context)?;
 
@@ -18,7 +18,7 @@ fn codegen() -> Result<(), Error> {
 
     println!("{}", module);
 
-    let engine = ExecutionEngine::new_mcjit(&module, 2)?;
+    let engine = ExecutionEngine::new_jit(module.clone(), 2)?;
 
     let testing: extern "C" fn(i32, i32) -> i32 = unsafe { engine.function("testing")? };
 
@@ -33,7 +33,7 @@ fn codegen() -> Result<(), Error> {
 #[test]
 fn if_then_else() -> Result<(), Error> {
     let ctx = Context::new()?;
-    let mut module = Module::new(&ctx, "test_if_then_else")?;
+    let module = Module::new(&ctx, "test_if_then_else")?;
     let builder = Builder::new(&ctx)?;
 
     let f32 = Type::float(&ctx)?;
@@ -55,7 +55,7 @@ fn if_then_else() -> Result<(), Error> {
     println!("{}", module);
 
     {
-        let engine = ExecutionEngine::new(&module)?;
+        let engine = ExecutionEngine::new(module.clone())?;
         let testing: extern "C" fn(f32) -> f32 = unsafe { engine.function("testing")? };
         let x = testing(11.0);
         let y = testing(9.0);
@@ -72,7 +72,7 @@ fn if_then_else() -> Result<(), Error> {
 #[test]
 fn for_loop() -> Result<(), Error> {
     let ctx = Context::new()?;
-    let mut module = Module::new(&ctx, "test_for_loop")?;
+    let module = Module::new(&ctx, "test_for_loop")?;
     let build = Builder::new(&ctx)?;
 
     let i64 = Type::int(&ctx, 64)?;
@@ -93,7 +93,7 @@ fn for_loop() -> Result<(), Error> {
     println!("{}", module);
 
     {
-        let engine = ExecutionEngine::new(&module)?;
+        let engine = ExecutionEngine::new(module.clone())?;
         let testing: extern "C" fn(i64) -> i64 = unsafe { engine.function("testing")? };
         let x = testing(10);
 
@@ -120,7 +120,7 @@ extern "C" fn testing1234() -> i32 {
 #[test]
 fn test_add_symbol() -> Result<(), Error> {
     let ctx = Context::new()?;
-    let mut module = Module::new(&ctx, "test_add_symbol")?;
+    let module = Module::new(&ctx, "test_add_symbol")?;
     let build = Builder::new(&ctx)?;
 
     symbol!(testing123, testing1234);
@@ -140,7 +140,7 @@ fn test_add_symbol() -> Result<(), Error> {
         build.ret(build.call(&testing1234, &[], "call")?)
     })?;
 
-    let engine = ExecutionEngine::new(&module)?;
+    let engine = ExecutionEngine::new(module)?;
     let testing: extern "C" fn() -> i32 = unsafe { engine.function("testing")? };
     let testing1: extern "C" fn() -> i32 = unsafe { engine.function("testing1")? };
     let x = testing();

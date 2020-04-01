@@ -10,7 +10,7 @@ pub enum Error {
     #[error("String contains invalid Utf8 character: {0}")]
     Utf8Error(#[from] std::str::Utf8Error),
 
-    /// General message
+    /// LLVM message
     #[error("Message: {0}")]
     Message(crate::Message),
 

@@ -109,7 +109,7 @@ pub use crate::builder::Builder;
 pub use crate::codegen::Codegen;
 pub use crate::context::Context;
 pub use crate::error::Error;
-pub use crate::execution_engine::ExecutionEngine;
+pub use crate::execution_engine::{ExecutionEngine, Handle};
 pub use crate::instr::*;
 pub use crate::memory_buffer::MemoryBuffer;
 pub use crate::message::Message;

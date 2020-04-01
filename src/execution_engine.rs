@@ -1,5 +1,20 @@
 use crate::*;
 
+/// Handle to data inside an execution engine
+pub struct Handle<'a, T>(T, PhantomData<&'a ()>);
+
+impl<'a, T> Handle<'a, T> {
+    /// Use inner value
+    pub fn with<R, F: Fn(&T) -> R>(&self, f: F) -> R {
+        f(&self.0)
+    }
+
+    /// Get inner value
+    pub fn get(self) -> T {
+        self.0
+    }
+}
+
 /// An execution engine can be used to execute JIT compiled code
 pub struct ExecutionEngine<'a>(
     NonNull<llvm::execution_engine::LLVMOpaqueExecutionEngine>,
@@ -84,7 +99,6 @@ impl<'a> ExecutionEngine<'a> {
     pub unsafe fn function<T: 'a + Copy>(&self, name: impl AsRef<str>) -> Result<T, Error> {
         let name = cstr!(name.as_ref());
         let ptr = llvm::execution_engine::LLVMGetFunctionAddress(self.llvm(), name.as_ptr());
-
         Ok(std::mem::transmute_copy(&(ptr as *mut c_void)))
     }
 
@@ -105,7 +119,7 @@ impl<'a> ExecutionEngine<'a> {
     /// # Safety
     /// This function does nothing to ensure that the function actually matches the type you give
     /// it
-    pub unsafe fn global<T: 'a>(&self, global: impl AsRef<Value<'a>>) -> Result<*mut T, Error> {
+    pub unsafe fn global<T: 'a>(&self, global: impl AsRef<Value<'a>>) -> Result<&mut T, Error> {
         let ptr =
             llvm::execution_engine::LLVMGetPointerToGlobal(self.llvm(), global.as_ref().llvm());
 

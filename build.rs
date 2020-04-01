@@ -2,9 +2,9 @@
 use std::os::unix::fs::PermissionsExt;
 
 fn main() {
-    let output = std::process::Command::new(
-        std::env::var("LLVM_CONFIG").unwrap_or_else(|_| "llvm-config".to_string()),
-    )
+    let output = std::process::Command::new(std::env::var("LLVM_CONFIG").unwrap_or_else(|_| {
+        std::env::var("DEP_LLVM_CONFIG_PATH").unwrap_or_else(|_| "llvm-config".to_string())
+    }))
     .arg("--prefix")
     .output()
     .unwrap()

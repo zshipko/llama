@@ -423,4 +423,78 @@ impl<'a> Func<'a> {
             .map(|x| Attribute::from_inner(x).unwrap())
             .collect()
     }
+
+    /// Create specified uniqued inline asm string (intel syntax)
+    pub fn inline_asm_intel(
+        t: impl AsRef<Type<'a>>,
+        s: impl AsRef<str>,
+        constraints: impl AsRef<str>,
+        has_side_effects: bool,
+        is_align_stack: bool,
+    ) -> Result<Value<'a>, Error> {
+        unsafe {
+            Value::from_inner(llvm::core::LLVMGetInlineAsm(
+                t.as_ref().llvm(),
+                s.as_ref().as_ptr() as *mut c_char,
+                s.as_ref().len(),
+                constraints.as_ref().as_ptr() as *mut c_char,
+                constraints.as_ref().len(),
+                has_side_effects as c_int,
+                is_align_stack as c_int,
+                llvm::LLVMInlineAsmDialect::LLVMInlineAsmDialectIntel,
+            ))
+        }
+    }
+
+    /// Create specified uniqued inline asm string (att syntax)
+    pub fn inline_asm_att(
+        t: impl AsRef<Type<'a>>,
+        s: impl AsRef<str>,
+        constraints: impl AsRef<str>,
+        has_side_effects: bool,
+        is_align_stack: bool,
+    ) -> Result<Value<'a>, Error> {
+        unsafe {
+            Value::from_inner(llvm::core::LLVMGetInlineAsm(
+                t.as_ref().llvm(),
+                s.as_ref().as_ptr() as *mut c_char,
+                s.as_ref().len(),
+                constraints.as_ref().as_ptr() as *mut c_char,
+                constraints.as_ref().len(),
+                has_side_effects as c_int,
+                is_align_stack as c_int,
+                llvm::LLVMInlineAsmDialect::LLVMInlineAsmDialectATT,
+            ))
+        }
+    }
+
+    /// Get value alignment
+    pub fn alignment(self) -> usize {
+        unsafe { llvm::core::LLVMGetAlignment(self.as_ref().llvm()) as usize }
+    }
+
+    /// Set value alignment
+    pub fn set_alignment(&mut self, align: usize) {
+        unsafe { llvm::core::LLVMSetAlignment(self.as_ref().llvm(), align as u32) }
+    }
+
+    /// Get global linkage
+    pub fn global_linkage(self) -> Linkage {
+        unsafe { llvm::core::LLVMGetLinkage(self.as_ref().llvm()) }
+    }
+
+    /// Set global linkage
+    pub fn set_global_linkage(&mut self, l: Linkage) {
+        unsafe { llvm::core::LLVMSetLinkage(self.as_ref().llvm(), l) }
+    }
+
+    /// Get global visibility
+    pub fn global_visibility(self) -> Visibility {
+        unsafe { llvm::core::LLVMGetVisibility(self.as_ref().llvm()) }
+    }
+
+    /// Set global visibility
+    pub fn set_global_visibility(&mut self, l: Visibility) {
+        unsafe { llvm::core::LLVMSetVisibility(self.as_ref().llvm(), l) }
+    }
 }

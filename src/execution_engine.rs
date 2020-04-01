@@ -3,6 +3,7 @@ use crate::*;
 /// An execution engine can be used to execute JIT compiled code
 pub struct ExecutionEngine<'a>(
     NonNull<llvm::execution_engine::LLVMOpaqueExecutionEngine>,
+    Module<'a>,
     PhantomData<&'a ()>,
 );
 
@@ -18,16 +19,18 @@ impl<'a> Drop for ExecutionEngine<'a> {
 }
 
 impl<'a> ExecutionEngine<'a> {
-    /// Create a new execution engine using `LLVMCreateExectionEngine`
-    pub fn new(module: Module<'a>) -> Result<ExecutionEngine<'a>, Error> {
+    /// Create a new execution engine using `LLVMCreateExectionEngineForModule`
+    pub fn new(mut module: Module<'a>) -> Result<ExecutionEngine<'a>, Error> {
         unsafe { llvm::execution_engine::LLVMLinkInInterpreter() }
+
+        module.1 = false;
 
         let mut engine = std::ptr::null_mut();
         let mut message = std::ptr::null_mut();
         let r = unsafe {
             llvm::execution_engine::LLVMCreateExecutionEngineForModule(
                 &mut engine,
-                llvm::core::LLVMCloneModule(module.llvm()),
+                module.llvm(),
                 &mut message,
             ) == 1
         };
@@ -37,12 +40,14 @@ impl<'a> ExecutionEngine<'a> {
             return Err(Error::Message(message));
         }
 
-        Ok(ExecutionEngine(wrap_inner(engine)?, PhantomData))
+        Ok(ExecutionEngine(wrap_inner(engine)?, module, PhantomData))
     }
 
-    /// Create new MCJIT compiler with optimization level
-    pub fn new_jit(module: Module<'a>, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
+    /// Create new JIT compiler with optimization level
+    pub fn new_jit(mut module: Module<'a>, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
         unsafe { llvm::execution_engine::LLVMLinkInMCJIT() }
+
+        module.1 = false;
 
         let mut opts = llvm::execution_engine::LLVMMCJITCompilerOptions {
             OptLevel: opt as c_uint,
@@ -56,7 +61,7 @@ impl<'a> ExecutionEngine<'a> {
         let r = unsafe {
             llvm::execution_engine::LLVMCreateMCJITCompilerForModule(
                 &mut engine,
-                llvm::core::LLVMCloneModule(module.llvm()),
+                module.llvm(),
                 &mut opts,
                 std::mem::size_of::<llvm::execution_engine::LLVMMCJITCompilerOptions>(),
                 &mut message,
@@ -68,7 +73,7 @@ impl<'a> ExecutionEngine<'a> {
             return Err(Error::Message(message));
         }
 
-        Ok(ExecutionEngine(wrap_inner(engine)?, PhantomData))
+        Ok(ExecutionEngine(wrap_inner(engine)?, module, PhantomData))
     }
 
     /// Get a function from within the execution engine
@@ -117,14 +122,9 @@ impl<'a> ExecutionEngine<'a> {
         unsafe { llvm::execution_engine::LLVMRunStaticDestructors(self.llvm()) }
     }
 
-    /// Add an existing module
-    pub fn add_module(&self, module: Module<'a>) {
-        unsafe {
-            llvm::execution_engine::LLVMAddModule(
-                self.llvm(),
-                llvm::core::LLVMCloneModule(module.llvm()),
-            )
-        }
+    /// Add an existing module to the execution engine
+    pub fn add_module(&self, module: &Module<'a>) {
+        self.1.link(module);
     }
 
     /// Add mapping between global value and a local object
@@ -142,5 +142,15 @@ impl<'a> ExecutionEngine<'a> {
     pub fn target_data(&self) -> Result<TargetData, Error> {
         let x = unsafe { llvm::execution_engine::LLVMGetExecutionEngineTargetData(self.llvm()) };
         TargetData::from_inner(x)
+    }
+
+    /// Get a reference to the underlying module
+    pub fn module(&self) -> &Module<'a> {
+        &self.1
+    }
+
+    /// Get a mutable reference to the underlying module
+    pub fn module_mut(&mut self) -> &mut Module<'a> {
+        &mut self.1
     }
 }

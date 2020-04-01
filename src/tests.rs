@@ -152,5 +152,7 @@ fn test_add_symbol() -> Result<(), Error> {
     println!("{}", y);
     assert_eq!(y, 1234);
 
+    println!("{}", engine.module());
+
     Ok(())
 }

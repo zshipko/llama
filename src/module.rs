@@ -1,12 +1,20 @@
 use crate::*;
 
 /// Wraps LLVMModule
-pub struct Module<'a>(NonNull<llvm::LLVMModule>, PhantomData<&'a ()>);
+pub struct Module<'a>(
+    pub(crate) NonNull<llvm::LLVMModule>,
+    pub(crate) bool,
+    pub(crate) PhantomData<&'a ()>,
+);
 
 llvm_inner_impl!(Module<'a>, llvm::LLVMModule);
 
 impl<'a> Drop for Module<'a> {
     fn drop(&mut self) {
+        if !self.1 {
+            return;
+        }
+
         unsafe { llvm::core::LLVMDisposeModule(self.llvm()) }
     }
 }
@@ -16,7 +24,7 @@ impl<'a> Clone for Module<'a> {
         let m = unsafe {
             wrap_inner(llvm::core::LLVMCloneModule(self.llvm())).expect("Invalid module")
         };
-        Module(m, PhantomData)
+        Module(m, true, PhantomData)
     }
 }
 
@@ -30,7 +38,7 @@ impl<'a> Module<'a> {
                 ctx.llvm(),
             ))?
         };
-        Ok(Module(m, PhantomData))
+        Ok(Module(m, true, PhantomData))
     }
 
     /// Get the associated context
@@ -254,7 +262,7 @@ impl<'a> Module<'a> {
 
         let module = wrap_inner(module)?;
 
-        Ok(Module(module, PhantomData))
+        Ok(Module(module, true, PhantomData))
     }
 
     /// Create a new module from existing bitcode
@@ -274,7 +282,7 @@ impl<'a> Module<'a> {
             Err(_) => return None,
         };
 
-        Some(Module(module, PhantomData))
+        Some(Module(module, true, PhantomData))
     }
 
     /// Write module bitcode to file
@@ -297,7 +305,7 @@ impl<'a> Module<'a> {
     }
 
     /// Link another module into `self`
-    pub fn link(&mut self, other: &Module) -> bool {
+    pub fn link(&self, other: &Module) -> bool {
         unsafe {
             let other = llvm::core::LLVMCloneModule(other.llvm());
             llvm::linker::LLVMLinkModules2(self.llvm(), other) == 1

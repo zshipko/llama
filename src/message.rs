@@ -1,7 +1,7 @@
 use crate::*;
 
 /// Wraps LLVM messages, these are strings that should be freed using LLVMDisposeMessage
-pub struct Message(*mut c_char);
+pub struct Message(pub(crate) *mut c_char);
 impl Message {
     pub(crate) fn from_raw(c: *mut c_char) -> Message {
         Message(c)

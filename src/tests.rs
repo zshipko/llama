@@ -82,7 +82,7 @@ fn for_loop() -> Result<(), Error> {
         let params = f.params();
         let one = Const::int_sext(i64, 1)?;
         let f = build.for_loop(
-            Const::int_sext(&i64, 0)?,
+            Const::int_sext(i64, 0)?,
             |x| build.icmp(Icmp::LLVMIntSLT, x, params[0], "cond"),
             |x| build.add(x, one, "add"),
             |x| Ok(*x),
@@ -133,11 +133,11 @@ fn test_add_symbol() -> Result<(), Error> {
 
     let ft = FuncType::new(i32, &[])?;
     module.declare_function(&build, "testing", ft, |_| {
-        build.ret(build.call(&testing123, &[], "call")?)
+        build.ret(build.call(testing123, &[], "call")?)
     })?;
 
     module.declare_function(&build, "testing1", ft, |_| {
-        build.ret(build.call(&testing1234, &[], "call")?)
+        build.ret(build.call(testing1234, &[], "call")?)
     })?;
 
     let engine = ExecutionEngine::new(module)?;
@@ -152,7 +152,9 @@ fn test_add_symbol() -> Result<(), Error> {
     println!("{}", y);
     assert_eq!(y, 1234);
 
-    println!("{}", engine.module());
+    for module in engine.modules().iter() {
+        println!("{}", module);
+    }
 
     Ok(())
 }

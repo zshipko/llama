@@ -162,7 +162,7 @@ impl<'a> Module<'a> {
     }
 
     /// Declare a new function with function body
-    pub fn declare_function<T: Into<Value<'a>>, F: FnOnce(&Func<'a>) -> Result<T, Error>>(
+    pub fn declare_function<T: Into<Value<'a>>, F: FnOnce(Func<'a>) -> Result<T, Error>>(
         &self,
         builder: &Builder<'a>,
         name: impl AsRef<str>,
@@ -170,7 +170,7 @@ impl<'a> Module<'a> {
         def: F,
     ) -> Result<Instr<'a>, Error> {
         let f = self.define_function(name, ft)?;
-        builder.function_body(f, |_, _| def(&f))
+        builder.function_body(f, |_, _| def(f))
     }
 
     /// Create a new global

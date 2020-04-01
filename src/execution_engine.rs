@@ -1,24 +1,9 @@
 use crate::*;
 
-/// Handle to data inside an execution engine
-pub struct Handle<'a, T>(T, PhantomData<&'a ()>);
-
-impl<'a, T> Handle<'a, T> {
-    /// Use inner value
-    pub fn with<R, F: Fn(&T) -> R>(&self, f: F) -> R {
-        f(&self.0)
-    }
-
-    /// Get inner value
-    pub fn get(self) -> T {
-        self.0
-    }
-}
-
 /// An execution engine can be used to execute JIT compiled code
 pub struct ExecutionEngine<'a>(
     NonNull<llvm::execution_engine::LLVMOpaqueExecutionEngine>,
-    Module<'a>,
+    std::cell::RefCell<Vec<Module<'a>>>,
     PhantomData<&'a ()>,
 );
 
@@ -55,7 +40,11 @@ impl<'a> ExecutionEngine<'a> {
             return Err(Error::Message(message));
         }
 
-        Ok(ExecutionEngine(wrap_inner(engine)?, module, PhantomData))
+        Ok(ExecutionEngine(
+            wrap_inner(engine)?,
+            std::cell::RefCell::new(vec![module]),
+            PhantomData,
+        ))
     }
 
     /// Create new JIT compiler with optimization level
@@ -88,7 +77,11 @@ impl<'a> ExecutionEngine<'a> {
             return Err(Error::Message(message));
         }
 
-        Ok(ExecutionEngine(wrap_inner(engine)?, module, PhantomData))
+        Ok(ExecutionEngine(
+            wrap_inner(engine)?,
+            std::cell::RefCell::new(vec![module]),
+            PhantomData,
+        ))
     }
 
     /// Get a function from within the execution engine
@@ -137,8 +130,11 @@ impl<'a> ExecutionEngine<'a> {
     }
 
     /// Add an existing module to the execution engine
-    pub fn add_module(&self, module: &Module<'a>) {
-        self.1.link(module);
+    pub fn add_module(&self, mut module: Module<'a>) {
+        module.1 = false;
+
+        unsafe { llvm::execution_engine::LLVMAddModule(self.llvm(), module.llvm()) }
+        self.1.borrow_mut().push(module);
     }
 
     /// Add mapping between global value and a local object
@@ -159,12 +155,7 @@ impl<'a> ExecutionEngine<'a> {
     }
 
     /// Get a reference to the underlying module
-    pub fn module(&self) -> &Module<'a> {
-        &self.1
-    }
-
-    /// Get a mutable reference to the underlying module
-    pub fn module_mut(&mut self) -> &mut Module<'a> {
-        &mut self.1
+    pub fn modules(&self) -> std::cell::Ref<Vec<Module<'a>>> {
+        self.1.borrow()
     }
 }

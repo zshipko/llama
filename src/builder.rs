@@ -872,7 +872,7 @@ impl<'a> Builder<'a> {
         )
     });
 
-    instr!(InstrCall: call(&self, f: &Func<'a>, args: impl AsRef<[Value<'a>]>, name: impl AsRef<str>) {
+    instr!(InstrCall: call(&self, f: Func<'a>, args: impl AsRef<[Value<'a>]>, name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
         let mut values: Vec<*mut llvm::LLVMValue> = args.as_ref().iter().map(|x| x.llvm()).collect();
         let ptr = values.as_mut_ptr();
@@ -881,7 +881,7 @@ impl<'a> Builder<'a> {
         llvm::core::LLVMBuildCall(self.llvm(), f.as_ref().llvm(), ptr, len as c_uint, name.as_ptr())
     });
 
-    instr!(InstrCall: call2(&self, t: impl AsRef<Type<'a>>, f: &Func<'a>, args: impl AsRef<[Value<'a>]>, name: impl AsRef<str>) {
+    instr!(InstrCall: call2(&self, t: impl AsRef<Type<'a>>, f: Func<'a>, args: impl AsRef<[Value<'a>]>, name: impl AsRef<str>) {
         let name = cstr!(name.as_ref());
         let mut values: Vec<*mut llvm::LLVMValue> = args.as_ref().iter().map(|x| x.llvm()).collect();
         let ptr = values.as_mut_ptr();

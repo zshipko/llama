@@ -123,20 +123,18 @@ fn test_add_symbol() -> Result<(), Error> {
     let module = Module::new(&ctx, "test_add_symbol")?;
     let build = Builder::new(&ctx)?;
 
-    symbol!(testing123, testing1234);
+    symbol!(testing123; testing1234);
 
     let i32 = Type::int(&ctx, 32)?;
-    let testing123_t = FuncType::new(i32, &[])?;
-    let testing123 = module.define_function("testing123", testing123_t)?;
 
-    let testing1234 = module.define_function("testing1234", testing123_t)?;
+    let testing123 = symbol!(module.fn testing123() -> i32)?;
+    let testing1234 = symbol!(module.fn testing1234() -> i32)?;
 
-    let ft = FuncType::new(i32, &[])?;
-    module.declare_function(&build, "testing", ft, |_| {
+    module.declare_function(&build, "testing", testing123.func_type()?, |_| {
         build.ret(build.call(testing123, &[], "call")?)
     })?;
 
-    module.declare_function(&build, "testing1", ft, |_| {
+    module.declare_function(&build, "testing1", testing1234.func_type()?, |_| {
         build.ret(build.call(testing1234, &[], "call")?)
     })?;
 

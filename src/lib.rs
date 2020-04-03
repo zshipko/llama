@@ -168,12 +168,31 @@ pub fn add_symbol<T>(name: impl AsRef<str>, x: *mut T) {
 
 #[macro_export]
 /// Add symbols to the global namespace
+///
+/// There are a few ways to use this macro:
+///
+/// 1) `symbol!(foo, bar)`: adds symbols for `foo` and `bar` in the local namespace, this
+///    is particularly useful for adding symbols for C functions
+/// 2) `symbol!(module.fn foo: function_type)`: adds a symbol `foo` to the global namespace and defines
+///    a function in the specified `module`
+/// 3) `symbol!(module.fn foo(i32) -> i32`: adds a symbol `foo` to the global namespace, creates
+///    a function type using the specified Rust function declaration (using `Type`s instead of
+///    Rust types) and defines a function in the specified `module`
 macro_rules! symbol {
-    ($($name:ident),*) => {
+    ($($name:ident);*) => {
         $(
             $crate::add_symbol(stringify!($name), $name as *mut std::ffi::c_void);
         )*
-    }
+    };
+    ($module:ident.fn $name:ident($($x:ident),*) -> $ret:expr) => {{
+        symbol!($name);
+        let t = $crate::FuncType::new($ret, &[$($x),*])?;
+        $module.define_function(stringify!($name), t)
+    }};
+    ($module:ident.fn $name:ident: $t:expr) => {{
+        symbol!($name);
+        $module.define_function(stringify!($name), $t)
+    }};
 }
 
 /// Get the default target triple

@@ -175,7 +175,12 @@ impl<'a> Type<'a> {
 
     /// Convert to function type
     pub fn to_func_type(self) -> Result<FuncType<'a>, Error> {
+        if self.is(TypeKind::LLVMPointerTypeKind) {
+            return self.element_type()?.to_func_type();
+        }
+
         if !self.is(TypeKind::LLVMFunctionTypeKind) {
+            println!("TYPE: {:?}", self.element_type()?.kind());
             return Err(Error::InvalidType);
         }
 
@@ -184,6 +189,10 @@ impl<'a> Type<'a> {
 
     /// Convert to struct type
     pub fn to_struct_type(self) -> Result<StructType<'a>, Error> {
+        if self.is(TypeKind::LLVMPointerTypeKind) {
+            return self.element_type()?.to_struct_type();
+        }
+
         if !self.is(TypeKind::LLVMStructTypeKind) {
             return Err(Error::InvalidType);
         }

@@ -270,7 +270,8 @@ impl<'a> Func<'a> {
 
     /// Get the `FuncType`
     pub fn func_type(self) -> Result<FuncType<'a>, Error> {
-        self.as_ref().type_of().map(|x| x.to_func_type().unwrap())
+        let t = self.0.type_of()?;
+        t.to_func_type()
     }
 
     /// Get a single param by index

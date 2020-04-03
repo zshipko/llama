@@ -168,9 +168,10 @@ impl<'a> Module<'a> {
         name: impl AsRef<str>,
         ft: FuncType,
         def: F,
-    ) -> Result<Instr<'a>, Error> {
+    ) -> Result<Func<'a>, Error> {
         let f = self.define_function(name, ft)?;
-        builder.function_body(f, |_, _| def(f))
+        builder.function_body(f, |_, _| def(f))?;
+        Ok(f)
     }
 
     /// Create a new global

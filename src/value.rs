@@ -262,6 +262,11 @@ impl<'a> From<Func<'a>> for Value<'a> {
 }
 
 impl<'a> Func<'a> {
+    /// Get the name of a value
+    pub fn name(self) -> Result<&'a str, Error> {
+        self.0.name()
+    }
+
     /// Get the number of params
     pub fn param_count(self) -> usize {
         let n = unsafe { llvm::core::LLVMCountParams(self.as_ref().llvm()) };

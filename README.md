@@ -6,6 +6,8 @@ Goals:
 - Support the latest `llvm-sys` release
 - Provide a nice interface, while still remaining as close as possible to the LLVM C API.
 
+Due to the size of the LLVM API there is bound to be missing, broken or incomplete functionality in `llama`, please create an issue if something you need isn't implemented.
+
 **NOTE**: `llama` will let you generate invalid IR, take a look at [inkwell](https://github.com/TheDan64/inkwell) for LLVM bindings with a focus on type-safety
 
 ## Documentation

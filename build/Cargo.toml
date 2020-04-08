@@ -8,6 +8,7 @@ repository = "https://github.com/zshipko/llama"
 documentation = "https://zshipko.github.io/llama/llama_build"
 description = "Friendly LLVM bindings (BUILD)"
 keywords = ["LLVM", "build"]
+license = "ISC"
 
 [dependencies]
 cc = "1"

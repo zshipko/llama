@@ -13,5 +13,5 @@ license = "ISC"
 [dependencies]
 anyhow = "1"
 thiserror = "1"
-llama = {path = ".."}
+llama = {path = "..", version = "0.1"}
 lightbeam = {version = "0.12"}

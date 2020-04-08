@@ -14,4 +14,4 @@ license = "ISC"
 anyhow = "1"
 thiserror = "1"
 llama = {path = "..", version = "0.1"}
-lightbeam = {version = "0.12"}
+lightbeam = {version = "0.15"}

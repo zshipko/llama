@@ -16,7 +16,7 @@ jobs:
       run: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 10 && sudo ln -sf /usr/bin/llvm-config-10 /usr/bin/llvm-config
 
     - name: Run tests
-      run: cargo test --verbose --all-features
+      run: cargo test --verbose
   macos:
     runs-on: macos-latest
     steps:
@@ -26,7 +26,7 @@ jobs:
       run: brew update && brew install llvm@10 && brew upgrade llvm && ln -sf /usr/local/opt/llvm/bin/llvm-config /usr/local/bin/llvm-config
 
     - name: Run tests
-      run: cargo test --verbose --all-features
+      run: cargo test --verbose
   all_linux_nightly:
     runs-on: ubuntu-latest
     steps:
@@ -39,7 +39,7 @@ jobs:
       run: rustup toolchain install nightly
 
     - name: Run tests
-      run: cargo +nightly test --verbose --all-features --all
+      run: cargo +nightly test --verbose --all
   all_macos_nightly:
     runs-on: macos-latest
     steps:
@@ -52,7 +52,7 @@ jobs:
       run: rustup toolchain install nightly
 
     - name: Run tests
-      run: cargo +nightly test --verbose --all-features --all
+      run: cargo +nightly test --verbose --all
   clippy:
     runs-on: ubuntu-latest
     steps:
@@ -65,6 +65,6 @@ jobs:
       run: rustup toolchain install nightly --profile=default
 
     - name: Run tests
-      run: cargo +nightly clippy --all-features --all
+      run: cargo +nightly clippy --all
 
 

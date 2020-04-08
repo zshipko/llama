@@ -8,6 +8,7 @@ repository = "https://github.com/zshipko/llama"
 documentation = "https://zshipko.github.io/llama/llama"
 description = "Friendly LLVM bindings"
 keywords = ["LLVM", "JIT", "compiler"]
+license = "ISC"
 
 [dependencies]
 thiserror = "1"

@@ -53,11 +53,20 @@ impl<'a> From<StructType<'a>> for Type<'a> {
     }
 }
 
+pub trait LLVMType<'a> {
+    fn llvm_type(ctx: &Context<'a>) -> Result<Type<'a>, Error>;
+}
+
 impl<'a> Type<'a> {
     /// Wrap an LLVMType pointer
     pub fn from_inner(ptr: *mut llvm::LLVMType) -> Result<Type<'a>, Error> {
         let t = wrap_inner(ptr)?;
         Ok(Type(t, PhantomData))
+    }
+
+    /// Allows for conversion between Rust/LLVM types
+    pub fn of<T: LLVMType<'a>>(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
+        T::llvm_type(ctx)
     }
 
     /// Get type by name
@@ -440,5 +449,95 @@ impl<'a> std::fmt::Display for Type<'a> {
             let s = Message::from_raw(llvm::core::LLVMPrintTypeToString(self.llvm()));
             write!(fmt, "{}", s.as_ref())
         }
+    }
+}
+
+impl<'a> LLVMType<'a> for u8 {
+    fn llvm_type(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
+        Type::int(ctx, 8)
+    }
+}
+
+impl<'a> LLVMType<'a> for i8 {
+    fn llvm_type(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
+        Type::int(ctx, 8)
+    }
+}
+
+impl<'a> LLVMType<'a> for u16 {
+    fn llvm_type(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
+        Type::int(ctx, 16)
+    }
+}
+
+impl<'a> LLVMType<'a> for i16 {
+    fn llvm_type(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
+        Type::int(ctx, 16)
+    }
+}
+
+impl<'a> LLVMType<'a> for u32 {
+    fn llvm_type(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
+        Type::int(ctx, 32)
+    }
+}
+
+impl<'a> LLVMType<'a> for i32 {
+    fn llvm_type(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
+        Type::int(ctx, 32)
+    }
+}
+
+impl<'a> LLVMType<'a> for u64 {
+    fn llvm_type(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
+        Type::int(ctx, 64)
+    }
+}
+
+impl<'a> LLVMType<'a> for i64 {
+    fn llvm_type(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
+        Type::int(ctx, 64)
+    }
+}
+
+impl<'a> LLVMType<'a> for u128 {
+    fn llvm_type(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
+        Type::int(ctx, 128)
+    }
+}
+
+impl<'a> LLVMType<'a> for i128 {
+    fn llvm_type(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
+        Type::int(ctx, 128)
+    }
+}
+
+impl<'a> LLVMType<'a> for f32 {
+    fn llvm_type(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
+        Type::float(ctx)
+    }
+}
+
+impl<'a> LLVMType<'a> for f64 {
+    fn llvm_type(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
+        Type::double(ctx)
+    }
+}
+
+impl<'a> LLVMType<'a> for () {
+    fn llvm_type(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
+        Type::void(ctx)
+    }
+}
+
+impl<'a, T: LLVMType<'a>> LLVMType<'a> for *const T {
+    fn llvm_type(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
+        T::llvm_type(ctx)?.pointer(None)
+    }
+}
+
+impl<'a, T: LLVMType<'a>> LLVMType<'a> for *mut T {
+    fn llvm_type(ctx: &Context<'a>) -> Result<Type<'a>, Error> {
+        T::llvm_type(ctx)?.pointer(None)
     }
 }

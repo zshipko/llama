@@ -11,7 +11,7 @@
 //!     let mut module_ = Module::new(&ctx, "my_module")?;
 //!     let builder = Builder::new(&ctx)?;
 //!
-//!     let i32 = Type::i32(&ctx)?;
+//!     let i32 = Type::of::<i32>(&ctx)?;
 //!
 //!     let example_t = FuncType::new(i32, &[i32, i32])?;
 //!     module_.declare_function(&builder, "example", example_t, |f| {

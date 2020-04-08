@@ -7,7 +7,7 @@ fn codegen() -> Result<(), Error> {
 
     let builder = Builder::new(&context)?;
 
-    let i32 = Type::int(&context, 32)?;
+    let i32 = Type::of::<i32>(&context)?;
 
     let ft = FuncType::new(i32, &[i32, i32])?;
     module.declare_function(&builder, "testing", ft, |f| {

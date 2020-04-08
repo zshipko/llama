@@ -4,7 +4,7 @@
 //! `llama` is a friendly LLVM wrapper
 //!
 //! # Getting started
-//! ```rust
+//! ```no_run,rust
 //! use llama::*;
 //! fn main() -> Result<(), Error> {
 //!     let ctx = Context::new()?;

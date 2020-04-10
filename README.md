@@ -4,6 +4,14 @@
     <img src="https://img.shields.io/crates/v/llama.svg">
 </a>
 
+<a href="https://crates.io/crates/llama-build">
+    <img src="https://img.shields.io/crates/v/llama-build.svg">
+</a>
+
+<a href="https://crates.io/crates/llama-wasm">
+    <img src="https://img.shields.io/crates/v/llama-wasm.svg">
+</a>
+
 A friendly LLVM library for Rust.
 
 Goals:

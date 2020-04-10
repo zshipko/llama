@@ -1,5 +1,9 @@
 # llama
 
+<a href="https://crates.io/crates/llama">
+    <img src="https://img.shields.io/crates/v/llama.svg">
+</a>
+
 A friendly LLVM library for Rust.
 
 Goals:

@@ -175,7 +175,7 @@ impl<'a> Module<'a> {
     }
 
     /// Create a new global
-    pub fn global(
+    pub fn add_global(
         &self,
         name: impl AsRef<str>,
         t: impl AsRef<Type<'a>>,
@@ -187,7 +187,7 @@ impl<'a> Module<'a> {
     }
 
     /// Create a new global in the given address space
-    pub fn global_in_address_space(
+    pub fn add_global_in_address_space(
         &self,
         name: impl AsRef<str>,
         t: impl AsRef<Type<'a>>,
@@ -206,10 +206,17 @@ impl<'a> Module<'a> {
     }
 
     /// Get a function by name
-    pub fn named_function(&self, name: impl AsRef<str>) -> Result<Func<'a>, Error> {
+    pub fn function(&self, name: impl AsRef<str>) -> Result<Func<'a>, Error> {
         let name = cstr!(name.as_ref());
         let value = unsafe { llvm::core::LLVMGetNamedFunction(self.llvm(), name.as_ptr()) };
         Ok(Func(Value::from_inner(value)?))
+    }
+
+    /// Get a function by name
+    pub fn global(&self, name: impl AsRef<str>) -> Result<Value<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        let value = unsafe { llvm::core::LLVMGetNamedGlobal(self.llvm(), name.as_ptr()) };
+        Value::from_inner(value)
     }
 
     /// Get the first global

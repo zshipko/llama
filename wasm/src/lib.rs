@@ -66,7 +66,7 @@ impl<'a> Wasm<'a> {
         self.func_map.get(name.as_ref()).map(|x| *x as u32)
     }
 
-    /// Get
+    /// Get executable module
     pub fn exec(&self) -> &Exec {
         &self.exec
     }

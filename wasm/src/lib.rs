@@ -1,3 +1,5 @@
+//! `llama-wasm` allows for LLVm modules to be executed in a WASM runtime using Lightbeam
+
 use std::collections::BTreeMap;
 
 #[derive(Debug, thiserror::Error)]

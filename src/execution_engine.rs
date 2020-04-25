@@ -23,8 +23,6 @@ impl<'a> ExecutionEngine<'a> {
     pub fn new(mut module: Module<'a>) -> Result<ExecutionEngine<'a>, Error> {
         unsafe { llvm::execution_engine::LLVMLinkInInterpreter() }
 
-        module.1 = false;
-
         let mut engine = std::ptr::null_mut();
         let mut message = std::ptr::null_mut();
         let r = unsafe {
@@ -40,6 +38,8 @@ impl<'a> ExecutionEngine<'a> {
             return Err(Error::Message(message));
         }
 
+        module.1 = false;
+
         Ok(ExecutionEngine(
             wrap_inner(engine)?,
             std::cell::RefCell::new(vec![module]),
@@ -50,8 +50,6 @@ impl<'a> ExecutionEngine<'a> {
     /// Create new JIT compiler with optimization level
     pub fn new_jit(mut module: Module<'a>, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
         unsafe { llvm::execution_engine::LLVMLinkInMCJIT() }
-
-        module.1 = false;
 
         let mut opts = llvm::execution_engine::LLVMMCJITCompilerOptions {
             OptLevel: opt as c_uint,
@@ -76,6 +74,8 @@ impl<'a> ExecutionEngine<'a> {
         if r {
             return Err(Error::Message(message));
         }
+
+        module.1 = false;
 
         Ok(ExecutionEngine(
             wrap_inner(engine)?,

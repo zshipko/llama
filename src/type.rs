@@ -189,7 +189,6 @@ impl<'a> Type<'a> {
         }
 
         if !self.is(TypeKind::LLVMFunctionTypeKind) {
-            println!("TYPE: {:?}", self.element_type()?.kind());
             return Err(Error::InvalidType);
         }
 

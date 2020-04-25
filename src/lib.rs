@@ -166,6 +166,29 @@ pub fn add_symbol<T>(name: impl AsRef<str>, x: *mut T) {
     unsafe { llvm::support::LLVMAddSymbol(name.as_ptr(), x as *mut c_void) }
 }
 
+#[macro_export]
+/// Add symbols to the global namespace
+///
+/// There are a few ways to use this macro:
+///
+/// 1) `symbol!(foo, bar)`: adds symbols for `foo` and `bar` in the local namespace, this
+///    is particularly useful for adding symbols for C functions
+/// 2) `symbol!(foo: something::my_foo)`: adds a symbol for `foo` which maps to the rust function
+///    `something::my_foo`
+macro_rules! symbol {
+    ($($name:ident),*) => {
+        $(
+            $crate::add_symbol(stringify!($name), $name as *mut std::ffi::c_void);
+        )*
+    };
+
+    ($($name:ident : $path:path),*) => {
+        $(
+            $crate::add_symbol(stringify!($name), $path as *mut std::ffi::c_void);
+        )*
+    };
+}
+
 /// Get the default target triple
 pub fn default_target_triple() -> &'static str {
     unsafe {

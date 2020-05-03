@@ -178,6 +178,37 @@ impl<'a> Module<'a> {
         Ok(f)
     }
 
+    /// Create a new global with an empty initializer
+    pub fn define_global(
+        &self,
+        name: impl AsRef<str>,
+        ty: impl AsRef<Type<'a>>,
+    ) -> Result<Value<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        let value =
+            unsafe { llvm::core::LLVMAddGlobal(self.llvm(), ty.as_ref().llvm(), name.as_ptr()) };
+        Ok(Value::from_inner(value)?)
+    }
+
+    /// Define a new global in the given address space with an empty initializer
+    pub fn define_global_in_address_space(
+        &self,
+        name: impl AsRef<str>,
+        ty: impl AsRef<Type<'a>>,
+        addr: usize,
+    ) -> Result<Value<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        let value = unsafe {
+            llvm::core::LLVMAddGlobalInAddressSpace(
+                self.llvm(),
+                ty.as_ref().llvm(),
+                name.as_ptr(),
+                addr as c_uint,
+            )
+        };
+        Value::from_inner(value)
+    }
+
     /// Create a new global with the specified initializer
     pub fn declare_global(
         &self,
@@ -200,7 +231,7 @@ impl<'a> Module<'a> {
         name: impl AsRef<str>,
         t: impl AsRef<Value<'a>>,
         addr: usize,
-    ) -> Result<Func<'a>, Error> {
+    ) -> Result<Value<'a>, Error> {
         let name = cstr!(name.as_ref());
         let ty = t.as_ref().type_of()?;
         let value = unsafe {
@@ -214,7 +245,7 @@ impl<'a> Module<'a> {
         unsafe {
             llvm::core::LLVMSetInitializer(value, t.as_ref().llvm());
         }
-        Ok(Func(Value::from_inner(value)?))
+        Value::from_inner(value)
     }
 
     /// Get a function by name

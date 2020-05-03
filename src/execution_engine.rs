@@ -3,7 +3,7 @@ use crate::*;
 /// An execution engine can be used to execute JIT compiled code
 pub struct ExecutionEngine<'a>(
     NonNull<llvm::execution_engine::LLVMOpaqueExecutionEngine>,
-    std::cell::RefCell<Vec<Module<'a>>>,
+    Module<'a>,
     PhantomData<&'a ()>,
 );
 
@@ -20,8 +20,15 @@ impl<'a> Drop for ExecutionEngine<'a> {
 
 impl<'a> ExecutionEngine<'a> {
     /// Create a new execution engine using `LLVMCreateExectionEngineForModule`
-    pub fn new(mut module: Module<'a>) -> Result<ExecutionEngine<'a>, Error> {
+    pub fn new(module: Module<'a>) -> Result<ExecutionEngine<'a>, Error> {
         unsafe { llvm::execution_engine::LLVMLinkInInterpreter() }
+
+        if !module
+            .1
+            .compare_and_swap(true, false, std::sync::atomic::Ordering::Relaxed)
+        {
+            return Err(Error::ModuleIsAlreadyOwned);
+        }
 
         let mut engine = std::ptr::null_mut();
         let mut message = std::ptr::null_mut();
@@ -35,21 +42,23 @@ impl<'a> ExecutionEngine<'a> {
 
         let message = Message::from_raw(message);
         if r {
+            module.1.store(true, std::sync::atomic::Ordering::Relaxed);
             return Err(Error::Message(message));
         }
 
-        module.1 = false;
-
-        Ok(ExecutionEngine(
-            wrap_inner(engine)?,
-            std::cell::RefCell::new(vec![module]),
-            PhantomData,
-        ))
+        Ok(ExecutionEngine(wrap_inner(engine)?, module, PhantomData))
     }
 
     /// Create new JIT compiler with optimization level
-    pub fn new_jit(mut module: Module<'a>, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
+    pub fn new_jit(module: Module<'a>, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
         unsafe { llvm::execution_engine::LLVMLinkInMCJIT() }
+
+        if !module
+            .1
+            .compare_and_swap(true, false, std::sync::atomic::Ordering::Relaxed)
+        {
+            return Err(Error::ModuleIsAlreadyOwned);
+        }
 
         let mut opts = llvm::execution_engine::LLVMMCJITCompilerOptions {
             OptLevel: opt as c_uint,
@@ -72,16 +81,11 @@ impl<'a> ExecutionEngine<'a> {
 
         let message = Message::from_raw(message);
         if r {
+            module.1.store(true, std::sync::atomic::Ordering::Relaxed);
             return Err(Error::Message(message));
         }
 
-        module.1 = false;
-
-        Ok(ExecutionEngine(
-            wrap_inner(engine)?,
-            std::cell::RefCell::new(vec![module]),
-            PhantomData,
-        ))
+        Ok(ExecutionEngine(wrap_inner(engine)?, module, PhantomData))
     }
 
     /// Get a function from within the execution engine
@@ -129,14 +133,6 @@ impl<'a> ExecutionEngine<'a> {
         unsafe { llvm::execution_engine::LLVMRunStaticDestructors(self.llvm()) }
     }
 
-    /// Add an existing module to the execution engine
-    pub fn add_module(&self, mut module: Module<'a>) {
-        module.1 = false;
-
-        unsafe { llvm::execution_engine::LLVMAddModule(self.llvm(), module.llvm()) }
-        self.1.borrow_mut().push(module);
-    }
-
     /// Add mapping between global value and a local object
     pub fn add_global_mapping<T: 'a>(&mut self, global: impl AsRef<Value<'a>>, data: *mut T) {
         unsafe {
@@ -154,8 +150,43 @@ impl<'a> ExecutionEngine<'a> {
         TargetData::from_inner(x)
     }
 
-    /// Get a reference to the underlying module
-    pub fn modules(&self) -> std::cell::Ref<Vec<Module<'a>>> {
-        self.1.borrow()
+    /// Get handle to underlying module
+    pub fn module(&self) -> &Module<'a> {
+        &self.1
+    }
+
+    /// Get mutable handle to underlying module
+    pub fn module_mut(&mut self) -> &mut Module<'a> {
+        &mut self.1
+    }
+
+    /// Get inner module
+    pub fn into_module(self) -> Result<Module<'a>, Error> {
+        let mut message = std::ptr::null_mut();
+        let mut ptr = std::ptr::null_mut();
+        let rc = unsafe {
+            llvm::execution_engine::LLVMRemoveModule(
+                self.llvm(),
+                self.1.llvm(),
+                &mut ptr,
+                &mut message as *mut *mut std::os::raw::c_char,
+            )
+        };
+
+        let message = Message::from_raw(message);
+        if rc > 0 {
+            return Err(Error::Message(message));
+        }
+
+        let ptr = match std::ptr::NonNull::new(ptr) {
+            Some(x) => x,
+            None => return Err(Error::NullPointer),
+        };
+
+        Ok(Module(
+            ptr,
+            std::sync::atomic::AtomicBool::new(true),
+            PhantomData,
+        ))
     }
 }

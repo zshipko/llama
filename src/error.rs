@@ -38,6 +38,10 @@ pub enum Error {
     #[error("Invalid function")]
     InvalidFunction,
 
+    /// Module is already owned by another ExecutionEngine
+    #[error("Module is already owned by another execution engine")]
+    ModuleIsAlreadyOwned,
+
     /// Mutex guard poison error
     #[error("Poison error: {0}")]
     Poison(#[from] std::sync::PoisonError<std::sync::MutexGuard<'static, ()>>),

@@ -32,7 +32,7 @@ impl Codegen {
 
         let lto = unsafe { wrap_inner(llvm::lto::lto_codegen_create_in_local_context())? };
 
-        let s = module.write_bitcode_to_memory_buffer()?;
+        let s = module.clone().write_bitcode_to_memory_buffer()?;
         let context = module.context()?;
         let bin = Binary::new(&context, &s)?;
 

@@ -18,14 +18,14 @@ fn codegen() -> Result<(), Error> {
 
     println!("{}", module);
 
-    let engine = ExecutionEngine::new_jit(module.clone(), 2)?;
+    let engine = ExecutionEngine::new_jit(module, 2)?;
 
     let testing: extern "C" fn(i32, i32) -> i32 = unsafe { engine.function("testing")? };
 
     let x: i32 = testing(1i32, 2i32);
     assert_eq!(x, 3);
 
-    Codegen::new(&module, &["testing"], true)?;
+    Codegen::new(engine.module(), &["testing"], true)?;
 
     Ok(())
 }
@@ -54,17 +54,15 @@ fn if_then_else() -> Result<(), Error> {
 
     println!("{}", module);
 
-    {
-        let engine = ExecutionEngine::new(module.clone())?;
-        let testing: extern "C" fn(f32) -> f32 = unsafe { engine.function("testing")? };
-        let x = testing(11.0);
-        let y = testing(9.0);
+    let engine = ExecutionEngine::new(module)?;
+    let testing: extern "C" fn(f32) -> f32 = unsafe { engine.function("testing")? };
+    let x = testing(11.0);
+    let y = testing(9.0);
 
-        assert_eq!(x, 2.0);
-        assert_eq!(y, 1.0);
-    }
+    assert_eq!(x, 2.0);
+    assert_eq!(y, 1.0);
 
-    Codegen::new(&module, &["testing"], false)?;
+    Codegen::new(engine.module(), &["testing"], false)?;
 
     Ok(())
 }
@@ -92,19 +90,17 @@ fn for_loop() -> Result<(), Error> {
 
     println!("{}", module);
 
-    {
-        let engine = ExecutionEngine::new(module.clone())?;
-        let testing: extern "C" fn(i64) -> i64 = unsafe { engine.function("testing")? };
-        let x = testing(10);
+    let engine = ExecutionEngine::new(module)?;
+    let testing: extern "C" fn(i64) -> i64 = unsafe { engine.function("testing")? };
+    let x = testing(10);
 
-        println!("{}", x);
-        assert_eq!(x, 9);
+    println!("{}", x);
+    assert_eq!(x, 9);
 
-        let x = testing(100);
-        assert_eq!(x, 99);
-    }
+    let x = testing(100);
+    assert_eq!(x, 99);
 
-    Codegen::new(&module, &["testing"], true)?;
+    Codegen::new(&engine.into_module()?, &["testing"], true)?;
 
     Ok(())
 }
@@ -151,10 +147,6 @@ fn test_add_symbol() -> Result<(), Error> {
 
     println!("{}", y);
     assert_eq!(y, 1234);
-
-    for module in engine.modules().iter() {
-        println!("{}", module);
-    }
 
     Ok(())
 }

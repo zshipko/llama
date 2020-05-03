@@ -3,7 +3,7 @@ use crate::*;
 /// Wraps LLVMModule
 pub struct Module<'a>(
     pub(crate) NonNull<llvm::LLVMModule>,
-    pub(crate) bool,
+    pub(crate) std::sync::atomic::AtomicBool,
     pub(crate) PhantomData<&'a ()>,
 );
 
@@ -11,7 +11,7 @@ llvm_inner_impl!(Module<'a>, llvm::LLVMModule);
 
 impl<'a> Drop for Module<'a> {
     fn drop(&mut self) {
-        if !self.1 {
+        if !self.1.load(std::sync::atomic::Ordering::Relaxed) {
             return;
         }
 
@@ -24,7 +24,7 @@ impl<'a> Clone for Module<'a> {
         let m = unsafe {
             wrap_inner(llvm::core::LLVMCloneModule(self.llvm())).expect("Invalid module")
         };
-        Module(m, true, PhantomData)
+        Module(m, std::sync::atomic::AtomicBool::new(true), PhantomData)
     }
 }
 
@@ -38,7 +38,11 @@ impl<'a> Module<'a> {
                 ctx.llvm(),
             ))?
         };
-        Ok(Module(m, true, PhantomData))
+        Ok(Module(
+            m,
+            std::sync::atomic::AtomicBool::new(true),
+            PhantomData,
+        ))
     }
 
     /// Get the associated context
@@ -270,7 +274,11 @@ impl<'a> Module<'a> {
 
         let module = wrap_inner(module)?;
 
-        Ok(Module(module, true, PhantomData))
+        Ok(Module(
+            module,
+            std::sync::atomic::AtomicBool::new(true),
+            PhantomData,
+        ))
     }
 
     /// Create a new module from existing bitcode
@@ -290,7 +298,11 @@ impl<'a> Module<'a> {
             Err(_) => return None,
         };
 
-        Some(Module(module, true, PhantomData))
+        Some(Module(
+            module,
+            std::sync::atomic::AtomicBool::new(true),
+            PhantomData,
+        ))
     }
 
     /// Write module bitcode to file

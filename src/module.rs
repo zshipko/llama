@@ -178,34 +178,42 @@ impl<'a> Module<'a> {
         Ok(f)
     }
 
-    /// Create a new global
-    pub fn add_global(
+    /// Create a new global with the specified initializer
+    pub fn declare_global(
         &self,
         name: impl AsRef<str>,
-        t: impl AsRef<Type<'a>>,
+        t: impl AsRef<Value<'a>>,
     ) -> Result<Value<'a>, Error> {
         let name = cstr!(name.as_ref());
+        let ty = t.as_ref().type_of()?;
         let value =
-            unsafe { llvm::core::LLVMAddGlobal(self.llvm(), t.as_ref().llvm(), name.as_ptr()) };
+            unsafe { llvm::core::LLVMAddGlobal(self.llvm(), ty.as_ref().llvm(), name.as_ptr()) };
+        unsafe {
+            llvm::core::LLVMSetInitializer(value, t.as_ref().llvm());
+        }
         Ok(Value::from_inner(value)?)
     }
 
-    /// Create a new global in the given address space
-    pub fn add_global_in_address_space(
+    /// Create a new global in the given address space with the specified initializer
+    pub fn declare_global_in_address_space(
         &self,
         name: impl AsRef<str>,
-        t: impl AsRef<Type<'a>>,
+        t: impl AsRef<Value<'a>>,
         addr: usize,
     ) -> Result<Func<'a>, Error> {
         let name = cstr!(name.as_ref());
+        let ty = t.as_ref().type_of()?;
         let value = unsafe {
             llvm::core::LLVMAddGlobalInAddressSpace(
                 self.llvm(),
-                t.as_ref().llvm(),
+                ty.llvm(),
                 name.as_ptr(),
                 addr as c_uint,
             )
         };
+        unsafe {
+            llvm::core::LLVMSetInitializer(value, t.as_ref().llvm());
+        }
         Ok(Func(Value::from_inner(value)?))
     }
 

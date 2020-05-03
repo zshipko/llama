@@ -4,7 +4,7 @@ A friendly LLVM library for Rust.
 
 Goals:
 - Support the latest `llvm-sys` release
-- Provide a nice interface, while still remaining as close as possible to the LLVM C API.
+- Provide an improved interface, while still remaining as close as possible to the LLVM C API.
 
 Due to the size of the LLVM API there is bound to be missing, broken or incomplete functionality in `llama`, please create an issue if something you need isn't implemented.
 

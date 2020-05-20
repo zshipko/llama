@@ -61,6 +61,7 @@ mod tests {
         std::env::set_var("OUT_DIR", "test");
         std::env::set_var("TARGET", TARGET);
         std::env::set_var("OPT_LEVEL", "");
+        std::env::set_var("HOST", "");
 
         Build::new().file("test.ll").link("test");
 

@@ -199,43 +199,6 @@ impl<'a> Value<'a> {
     pub fn is_constant_string(self) -> bool {
         unsafe { llvm::core::LLVMIsConstantString(self.llvm()) == 1 }
     }
-
-    /// Count the number of basic blocks
-    pub fn count_basic_blocks(self) -> usize {
-        unsafe { llvm::core::LLVMCountBasicBlocks(self.llvm()) as usize }
-    }
-
-    /// Get a list of all basic blocks
-    pub fn basic_blocks(self) -> Vec<BasicBlock<'a>> {
-        let count = self.count_basic_blocks();
-        let ptr = std::ptr::null_mut();
-        unsafe { llvm::core::LLVMGetBasicBlocks(self.llvm(), ptr) }
-        let slice = unsafe { std::slice::from_raw_parts(ptr, count) };
-        slice
-            .iter()
-            .map(|x| BasicBlock::from_inner(*x).unwrap())
-            .collect()
-    }
-
-    /// Get first basic block
-    pub fn first_basic_block(self) -> Result<BasicBlock<'a>, Error> {
-        BasicBlock::from_inner(unsafe { llvm::core::LLVMGetFirstBasicBlock(self.llvm()) })
-    }
-
-    /// Get last basic block
-    pub fn last_basic_block(self) -> Result<BasicBlock<'a>, Error> {
-        BasicBlock::from_inner(unsafe { llvm::core::LLVMGetLastBasicBlock(self.llvm()) })
-    }
-
-    /// Get entry block
-    pub fn entry_basic_block(self) -> Result<BasicBlock<'a>, Error> {
-        BasicBlock::from_inner(unsafe { llvm::core::LLVMGetEntryBasicBlock(self.llvm()) })
-    }
-
-    /// Append a new block
-    pub fn append_basic_block(self, bb: BasicBlock<'a>) {
-        unsafe { llvm::core::LLVMAppendExistingBasicBlock(self.llvm(), bb.llvm()) }
-    }
 }
 
 impl<'a> std::fmt::Display for Value<'a> {
@@ -502,5 +465,42 @@ impl<'a> Func<'a> {
     /// Set global visibility
     pub fn set_global_visibility(&mut self, l: Visibility) {
         unsafe { llvm::core::LLVMSetVisibility(self.as_ref().llvm(), l) }
+    }
+
+    /// Count the number of basic blocks
+    pub fn count_basic_blocks(self) -> usize {
+        unsafe { llvm::core::LLVMCountBasicBlocks(self.0.llvm()) as usize }
+    }
+
+    /// Get a list of all basic blocks
+    pub fn basic_blocks(self) -> Vec<BasicBlock<'a>> {
+        let count = self.count_basic_blocks();
+        let ptr = std::ptr::null_mut();
+        unsafe { llvm::core::LLVMGetBasicBlocks(self.0.llvm(), ptr) }
+        let slice = unsafe { std::slice::from_raw_parts(ptr, count) };
+        slice
+            .iter()
+            .map(|x| BasicBlock::from_inner(*x).unwrap())
+            .collect()
+    }
+
+    /// Get first basic block
+    pub fn first_basic_block(self) -> Result<BasicBlock<'a>, Error> {
+        BasicBlock::from_inner(unsafe { llvm::core::LLVMGetFirstBasicBlock(self.0.llvm()) })
+    }
+
+    /// Get last basic block
+    pub fn last_basic_block(self) -> Result<BasicBlock<'a>, Error> {
+        BasicBlock::from_inner(unsafe { llvm::core::LLVMGetLastBasicBlock(self.0.llvm()) })
+    }
+
+    /// Get entry block
+    pub fn entry_basic_block(self) -> Result<BasicBlock<'a>, Error> {
+        BasicBlock::from_inner(unsafe { llvm::core::LLVMGetEntryBasicBlock(self.0.llvm()) })
+    }
+
+    /// Append a new block
+    pub fn append_basic_block(self, bb: BasicBlock<'a>) {
+        unsafe { llvm::core::LLVMAppendExistingBasicBlock(self.0.llvm(), bb.llvm()) }
     }
 }

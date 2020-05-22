@@ -210,7 +210,7 @@ impl<'a> std::fmt::Display for Value<'a> {
 
 /// Functions
 #[derive(Clone, Copy)]
-pub struct Func<'a>(pub(crate) Value<'a>);
+pub struct Func<'a>(pub Value<'a>);
 
 impl<'a> AsRef<Value<'a>> for Func<'a> {
     fn as_ref(&self) -> &Value<'a> {

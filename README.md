@@ -14,7 +14,6 @@ Due to the size of the LLVM API there is bound to be missing, broken or incomple
 
 - [llama](https://zshipko.github.io/llama/llama) <a href="https://crates.io/crates/llama"><img src="https://img.shields.io/crates/v/llama.svg"></a>
 - [llama-build](https://zshipko.github.io/llama/llama_build) <a href="https://crates.io/crates/llama-build"><img src="https://img.shields.io/crates/v/llama-build.svg"></a>
-- [llama-wasm](https://zshipko.github.io/llama/llama_wasm) <a href="https://crates.io/crates/llama-wasm"><img src="https://img.shields.io/crates/v/llama-wasm.svg"></a>
 
 ## Examples
 

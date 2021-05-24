@@ -13,7 +13,7 @@ license = "ISC"
 [dependencies]
 thiserror = "1"
 lazy_static = "1"
-llvm-sys = {version = "110", features=["no-llvm-linking"]}
+llvm-sys = {version = "120", features=["no-llvm-linking"]}
 
 [package.metadata.docs.rs]
 features = [ "docs-rs" ]

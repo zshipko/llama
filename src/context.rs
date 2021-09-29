@@ -113,6 +113,12 @@ impl<'a> Context<'a> {
         unsafe { llvm::core::LLVMGetEnumAttributeKindForName(name.as_ptr(), len) }
     }
 
+    /// Get type by name
+    pub fn type_by_name(&self, name: impl AsRef<str>) -> Result<Type<'a>, Error> {
+        let name = cstr!(name.as_ref());
+        unsafe { Type::from_inner(llvm::core::LLVMGetTypeByName2(self.llvm(), name.as_ptr())) }
+    }
+
     // TODO: LLVMContextGetDiagnosticHandler, LLVMContextSetDiagnosticHandler,
     // LLVMContextSetYieldCallback, ...
 }

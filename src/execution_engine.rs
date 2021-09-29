@@ -23,9 +23,15 @@ impl<'a> ExecutionEngine<'a> {
     pub fn new(module: Module<'a>) -> Result<ExecutionEngine<'a>, Error> {
         unsafe { llvm::execution_engine::LLVMLinkInInterpreter() }
 
-        if !module
+        if module
             .1
-            .compare_and_swap(true, false, std::sync::atomic::Ordering::Relaxed)
+            .compare_exchange(
+                true,
+                false,
+                std::sync::atomic::Ordering::Relaxed,
+                std::sync::atomic::Ordering::Relaxed,
+            )
+            .is_err()
         {
             return Err(Error::ModuleIsAlreadyOwned);
         }
@@ -53,9 +59,15 @@ impl<'a> ExecutionEngine<'a> {
     pub fn new_jit(module: Module<'a>, opt: usize) -> Result<ExecutionEngine<'a>, Error> {
         unsafe { llvm::execution_engine::LLVMLinkInMCJIT() }
 
-        if !module
+        if module
             .1
-            .compare_and_swap(true, false, std::sync::atomic::Ordering::Relaxed)
+            .compare_exchange(
+                true,
+                false,
+                std::sync::atomic::Ordering::Relaxed,
+                std::sync::atomic::Ordering::Relaxed,
+            )
+            .is_err()
         {
             return Err(Error::ModuleIsAlreadyOwned);
         }

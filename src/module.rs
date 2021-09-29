@@ -255,7 +255,7 @@ impl<'a> Module<'a> {
         Ok(Func(Value::from_inner(value)?))
     }
 
-    /// Get a function by name
+    /// Get a global value by name
     pub fn global(&self, name: impl AsRef<str>) -> Result<Value<'a>, Error> {
         let name = cstr!(name.as_ref());
         let value = unsafe { llvm::core::LLVMGetNamedGlobal(self.llvm(), name.as_ptr()) };
@@ -369,12 +369,6 @@ impl<'a> Module<'a> {
             let other = llvm::core::LLVMCloneModule(other.llvm());
             llvm::linker::LLVMLinkModules2(self.llvm(), other) == 1
         }
-    }
-
-    /// Get type by name
-    pub fn type_by_name(&self, name: impl AsRef<str>) -> Result<Type<'a>, Error> {
-        let name = cstr!(name.as_ref());
-        unsafe { Type::from_inner(llvm::core::LLVMGetTypeByName(self.llvm(), name.as_ptr())) }
     }
 
     /// Set WASM32 target/data layout

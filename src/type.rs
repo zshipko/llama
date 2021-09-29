@@ -70,9 +70,8 @@ impl<'a> Type<'a> {
     }
 
     /// Get type by name
-    pub fn by_name(module: &Module, name: impl AsRef<str>) -> Result<Type<'a>, Error> {
-        let name = cstr!(name.as_ref());
-        unsafe { Self::from_inner(llvm::core::LLVMGetTypeByName(module.llvm(), name.as_ptr())) }
+    pub fn by_name(ctx: &'a Context, name: impl AsRef<str>) -> Result<Type<'a>, Error> {
+        ctx.type_by_name(name)
     }
 
     /// Get width of integer type

@@ -400,6 +400,7 @@ impl<'a> Func<'a> {
         constraints: impl AsRef<str>,
         has_side_effects: bool,
         is_align_stack: bool,
+        can_throw: bool,
     ) -> Result<Value<'a>, Error> {
         unsafe {
             Value::from_inner(llvm::core::LLVMGetInlineAsm(
@@ -411,6 +412,7 @@ impl<'a> Func<'a> {
                 has_side_effects as c_int,
                 is_align_stack as c_int,
                 llvm::LLVMInlineAsmDialect::LLVMInlineAsmDialectIntel,
+                can_throw as c_int,
             ))
         }
     }
@@ -422,6 +424,7 @@ impl<'a> Func<'a> {
         constraints: impl AsRef<str>,
         has_side_effects: bool,
         is_align_stack: bool,
+        can_throw: bool,
     ) -> Result<Value<'a>, Error> {
         unsafe {
             Value::from_inner(llvm::core::LLVMGetInlineAsm(
@@ -433,6 +436,7 @@ impl<'a> Func<'a> {
                 has_side_effects as c_int,
                 is_align_stack as c_int,
                 llvm::LLVMInlineAsmDialect::LLVMInlineAsmDialectATT,
+                can_throw as c_int,
             ))
         }
     }

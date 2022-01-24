@@ -12,7 +12,7 @@ pub trait PassManager: LLVM<llvm::LLVMPassManager> {
     type Kind;
 
     /// Run configured optimization passes
-    fn run(&self, f: &Self::Kind) -> bool;
+    unsafe fn run(&self, f: &Self::Kind) -> bool;
 
     /// Add optimization passes
     fn add(&self, transforms: impl AsRef<[Transform]>) {
@@ -44,8 +44,8 @@ impl<'a> Drop for FuncPassManager<'a> {
 
 impl<'a> FuncPassManager<'a> {
     /// Create new function pass manager
-    pub fn new() -> Result<FuncPassManager<'a>, Error> {
-        let ptr = unsafe { llvm::core::LLVMCreatePassManager() };
+    pub fn new(module: &Module<'a>) -> Result<FuncPassManager<'a>, Error> {
+        let ptr = unsafe { llvm::core::LLVMCreateFunctionPassManagerForModule(module.llvm()) };
 
         Ok(FuncPassManager(wrap_inner(ptr)?, PhantomData))
     }
@@ -63,15 +63,15 @@ impl<'a> ModulePassManager<'a> {
 impl<'a> PassManager for FuncPassManager<'a> {
     type Kind = Func<'a>;
 
-    fn run(&self, f: &Func<'a>) -> bool {
-        unsafe { llvm::core::LLVMRunFunctionPassManager(self.llvm(), f.as_ref().llvm()) == 1 }
+    unsafe fn run(&self, f: &Func<'a>) -> bool {
+        llvm::core::LLVMRunFunctionPassManager(self.llvm(), f.as_ref().llvm()) == 1
     }
 }
 
 impl<'a> PassManager for ModulePassManager<'a> {
     type Kind = Module<'a>;
 
-    fn run(&self, module: &Module<'a>) -> bool {
-        unsafe { llvm::core::LLVMRunPassManager(self.llvm(), module.llvm()) == 1 }
+    unsafe fn run(&self, module: &Module<'a>) -> bool {
+        llvm::core::LLVMRunPassManager(self.llvm(), module.llvm()) == 1
     }
 }

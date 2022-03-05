@@ -85,7 +85,6 @@ impl<'a> Builder<'a> {
         let entry = BasicBlock::append(self.context(), f.as_ref(), "entry")?;
         self.position_at_end(entry);
         let v = def(self, entry)?;
-        f.verify()?;
         Ok(Instr(v.into()))
     }
 

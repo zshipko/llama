@@ -49,7 +49,10 @@ fn if_then_else() -> Result<(), Error> {
         let a = Const::real(f32, 1.0)?;
         let b = Const::real(f32, 2.0)?;
         let ite = builder.if_then_else(cond, |_| Ok(a), |_| Ok(b))?;
-        builder.ret(ite)
+
+        let ret = builder.ret(ite);
+        f.verify()?;
+        ret
     })?;
 
     println!("{}", module);

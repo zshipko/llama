@@ -18,6 +18,8 @@ fn codegen() -> Result<(), Error> {
 
     println!("{}", module);
 
+    module.verify()?;
+
     let engine = ExecutionEngine::new_jit(module, 2)?;
 
     let testing: extern "C" fn(i32, i32) -> i32 = unsafe { engine.function("testing")? };

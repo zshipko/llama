@@ -145,7 +145,7 @@ impl<'a> Module<'a> {
                 self.llvm(),
                 llvm::analysis::LLVMVerifierFailureAction::LLVMReturnStatusAction,
                 &mut message,
-            ) == 1
+            ) == 0
         };
 
         let message = Message::from_raw(message);

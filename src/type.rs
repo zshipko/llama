@@ -21,7 +21,7 @@ impl<'a> Clone for Type<'a> {
 
 impl<'a> AsRef<Type<'a>> for Type<'a> {
     fn as_ref(&self) -> &Type<'a> {
-        &self
+        self
     }
 }
 

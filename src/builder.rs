@@ -103,15 +103,15 @@ impl<'a> Builder<'a> {
         let ctx = self.context();
         let start_bb = self.insertion_block()?;
         let function = start_bb.parent()?;
-        let then_bb = BasicBlock::append(&ctx, &function, "then")?;
+        let then_bb = BasicBlock::append(ctx, &function, "then")?;
         self.position_at_end(then_bb);
         let then_ = then_(self)?.into();
         let new_then_bb = self.insertion_block()?;
-        let else_bb = BasicBlock::append(&ctx, &function, "else")?;
+        let else_bb = BasicBlock::append(ctx, &function, "else")?;
         self.position_at_end(else_bb);
         let else_ = else_(self)?.into();
         let new_else_bb = self.insertion_block()?;
-        let merge_bb = BasicBlock::append(&ctx, &function, "ifcont")?;
+        let merge_bb = BasicBlock::append(ctx, &function, "ifcont")?;
         self.position_at_end(merge_bb);
 
         self.position_at_end(start_bb);
@@ -151,7 +151,7 @@ impl<'a> Builder<'a> {
 
         let preheader_bb = self.insertion_block()?;
         let function = preheader_bb.parent()?;
-        let loop_bb = BasicBlock::append(&ctx, &function, "loop")?;
+        let loop_bb = BasicBlock::append(ctx, &function, "loop")?;
 
         self.br(loop_bb)?;
         self.position_at_end(loop_bb);
@@ -166,7 +166,7 @@ impl<'a> Builder<'a> {
         let cond = cond(next_var.as_ref())?.into();
 
         let loop_end_bb = self.insertion_block()?;
-        let after_bb = BasicBlock::append(&ctx, &function, "after")?;
+        let after_bb = BasicBlock::append(ctx, &function, "after")?;
         self.cond_br(cond, loop_bb, after_bb)?;
         self.position_at_end(after_bb);
 

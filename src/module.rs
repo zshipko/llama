@@ -162,7 +162,8 @@ impl<'a> Module<'a> {
         let name = cstr!(name.as_ref());
         let value =
             unsafe { llvm::core::LLVMAddFunction(self.llvm(), name.as_ptr(), t.as_ref().llvm()) };
-        Ok(Func(Value::from_inner(value)?))
+        let x = Value::from_inner(value)?;
+        Ok(Func(x))
     }
 
     /// Declare a new function with function body
@@ -187,7 +188,7 @@ impl<'a> Module<'a> {
         let name = cstr!(name.as_ref());
         let value =
             unsafe { llvm::core::LLVMAddGlobal(self.llvm(), ty.as_ref().llvm(), name.as_ptr()) };
-        Ok(Value::from_inner(value)?)
+        Value::from_inner(value)
     }
 
     /// Define a new global in the given address space with an empty initializer
@@ -222,7 +223,7 @@ impl<'a> Module<'a> {
         unsafe {
             llvm::core::LLVMSetInitializer(value, t.as_ref().llvm());
         }
-        Ok(Value::from_inner(value)?)
+        Value::from_inner(value)
     }
 
     /// Create a new global in the given address space with the specified initializer

@@ -15,6 +15,10 @@ pub trait PassManager: LLVM<llvm::LLVMPassManager> {
     fn run(&self, f: &Self::Kind) -> bool;
 
     /// Add optimization passes
+    ///
+    /// # Safety
+    /// This is marked as unsafe because `Transform` functions
+    /// are unsafe
     unsafe fn add(&self, transforms: impl AsRef<[Transform]>) {
         for transform in transforms.as_ref().iter() {
             transform(self.llvm())

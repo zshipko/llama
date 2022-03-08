@@ -41,7 +41,7 @@ impl AttributeIndex {
 
 impl<'a> AsRef<Value<'a>> for Value<'a> {
     fn as_ref(&self) -> &Value<'a> {
-        &self
+        self
     }
 }
 

@@ -9,7 +9,7 @@ fn main() {
     let output = std::process::Command::new(std::env::var("LLVM_CONFIG").unwrap_or_else(|_| {
         std::env::var("DEP_LLVM_CONFIG_PATH").unwrap_or_else(|_| "llvm-config".to_string())
     }))
-    .arg("--prefix")
+    .arg("--libdir")
     .output()
     .unwrap()
     .stdout;
@@ -21,11 +21,11 @@ fn main() {
     let shared_lib = "dylib";
 
     let out_dir = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap());
-    let prefix = std::path::PathBuf::from(String::from_utf8(output).unwrap().trim());
+    let libdir = std::path::PathBuf::from(String::from_utf8(output).unwrap().trim());
 
     // Copy LTO lib
     let lto_file_name = format!("libLTO.{}", shared_lib);
-    let lto = prefix.join("lib").join(&lto_file_name);
+    let lto = libdir.join(&lto_file_name);
 
     let out_file = out_dir.join(&lto_file_name);
     std::fs::copy(&lto, &out_file).unwrap();
@@ -42,7 +42,7 @@ fn main() {
     {
         if let Ok(lto_full) = std::fs::read_link(&lto) {
             std::fs::copy(
-                prefix.join("lib").join(&lto_full),
+                libdir.join(&lto_full),
                 out_dir.join(lto_full.file_name().unwrap()),
             )
             .unwrap();
@@ -53,8 +53,8 @@ fn main() {
     let llvm_file_name = format!("libLLVM.{}", shared_lib);
     let out_file = out_dir.join(&llvm_file_name);
     println!("FILENAME: {}", llvm_file_name);
-    println!("PREFIX: {}", prefix.display());
-    std::fs::copy(prefix.join("lib").join(&llvm_file_name), &out_file).unwrap();
+    println!("LIBDIR: {}", libdir.display());
+    std::fs::copy(libdir.join(&llvm_file_name), &out_file).unwrap();
 
     #[cfg(target_os = "macos")]
     {

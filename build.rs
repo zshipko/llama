@@ -28,7 +28,9 @@ fn main() {
     let lto = libdir.join(&lto_file_name);
 
     let out_file = out_dir.join(&lto_file_name);
-    std::fs::copy(&lto, &out_file).unwrap();
+    if !out_file.exists() {
+        std::fs::copy(&lto, &out_file).unwrap();
+    }
 
     #[cfg(target_os = "macos")]
     {
@@ -41,11 +43,10 @@ fn main() {
     #[cfg(not(target_os = "macos"))]
     {
         if let Ok(lto_full) = std::fs::read_link(&lto) {
-            std::fs::copy(
-                libdir.join(&lto_full),
-                out_dir.join(lto_full.file_name().unwrap()),
-            )
-            .unwrap();
+            let out_file = out_dir.join(lto_full.file_name().unwrap());
+            if !out_file.exists() {
+                std::fs::copy(libdir.join(&lto_full), out_file).unwrap();
+            }
         }
     }
 
@@ -54,7 +55,9 @@ fn main() {
     let out_file = out_dir.join(&llvm_file_name);
     println!("FILENAME: {}", llvm_file_name);
     println!("LIBDIR: {}", libdir.display());
-    std::fs::copy(libdir.join(&llvm_file_name), &out_file).unwrap();
+    if !out_file.exists() {
+        std::fs::copy(libdir.join(&llvm_file_name), &out_file).unwrap();
+    }
 
     #[cfg(target_os = "macos")]
     {

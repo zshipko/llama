@@ -13,7 +13,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install deps
-      run: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 13 && sudo ln -sf /usr/bin/llvm-config-13 /usr/bin/llvm-config
+      run: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 14 && sudo ln -sf /usr/bin/llvm-config-14 /usr/bin/llvm-config
 
     - name: Run tests
       run: cargo test --verbose
@@ -23,7 +23,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install deps
-      run: brew update && brew install llvm@13 && brew upgrade llvm && ln -sf /usr/local/opt/llvm/bin/llvm-config /usr/local/bin/llvm-config
+      run: brew update && brew install llvm@14 && brew upgrade llvm && ln -sf /usr/local/opt/llvm/bin/llvm-config /usr/local/bin/llvm-config
 
     - name: Run tests
       run: cargo test --verbose
@@ -33,7 +33,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install deps
-      run: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 13 && sudo ln -sf /usr/bin/llvm-config-13 /usr/bin/llvm-config
+      run: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 14 && sudo ln -sf /usr/bin/llvm-config-14 /usr/bin/llvm-config
 
     - name: Nightly
       run: rustup toolchain install nightly
@@ -46,7 +46,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install deps
-      run: brew update && brew install llvm@13 && brew upgrade llvm && ln -sf /usr/local/opt/llvm/bin/llvm-config /usr/local/bin/llvm-config
+      run: brew update && brew install llvm@14 && brew upgrade llvm && ln -sf /usr/local/opt/llvm/bin/llvm-config /usr/local/bin/llvm-config
 
     - name: Nightly
       run: rustup toolchain install nightly
@@ -59,7 +59,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install deps
-      run: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 13 && sudo ln -sf /usr/bin/llvm-config-13 /usr/bin/llvm-config
+      run: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 14 && sudo ln -sf /usr/bin/llvm-config-14 /usr/bin/llvm-config
 
     - name: Nightly
       run: rustup toolchain install nightly --profile=default

@@ -16,7 +16,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Install dependencies
-      run: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 13 && sudo ln -sf /usr/bin/llvm-config-13 /usr/bin/llvm-config
+      run: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 14 && sudo ln -sf /usr/bin/llvm-config-14 /usr/bin/llvm-config
 
     - name: Install Rust toolchain
       uses: actions-rs/toolchain@v1

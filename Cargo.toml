@@ -1,6 +1,6 @@
 [package]
 name = "llama"
-version = "0.12.0"
+version = "0.14.0"
 authors = ["Zach Shipko <zachshipko@gmail.com>"]
 edition = "2018"
 readme = "README.md"
@@ -13,7 +13,7 @@ license = "ISC"
 [dependencies]
 thiserror = "1"
 lazy_static = "1"
-llvm-sys = {version = "130", features=["no-llvm-linking"]}
+llvm-sys = {version = "140.0.2", features=["no-llvm-linking"]}
 
 [package.metadata.docs.rs]
 features = [ "docs-rs" ]

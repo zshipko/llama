@@ -514,20 +514,7 @@ impl<'a> Const<'a> {
         }
     }
 
-    pub fn gep(self, i: impl AsRef<[Value<'a>]>) -> Result<Const<'a>, Error> {
-        let len = i.as_ref().len();
-        let mut i: Vec<*mut llvm::LLVMValue> = i.as_ref().iter().map(|x| x.llvm()).collect();
-        unsafe {
-            Value::from_inner(llvm::core::LLVMConstGEP(
-                self.as_ref().llvm(),
-                i.as_mut_ptr(),
-                len as c_uint,
-            ))?
-            .to_const()
-        }
-    }
-
-    pub fn gep2(
+    pub fn gep(
         self,
         t: impl AsRef<Type<'a>>,
         i: impl AsRef<[Value<'a>]>,
@@ -545,20 +532,7 @@ impl<'a> Const<'a> {
         }
     }
 
-    pub fn in_bounds_gep(self, i: impl AsRef<[Value<'a>]>) -> Result<Const<'a>, Error> {
-        let len = i.as_ref().len();
-        let mut i: Vec<*mut llvm::LLVMValue> = i.as_ref().iter().map(|x| x.llvm()).collect();
-        unsafe {
-            Value::from_inner(llvm::core::LLVMConstInBoundsGEP(
-                self.as_ref().llvm(),
-                i.as_mut_ptr(),
-                len as c_uint,
-            ))?
-            .to_const()
-        }
-    }
-
-    pub fn in_bounds_gep2(
+    pub fn in_bounds_gep(
         self,
         t: impl AsRef<Type<'a>>,
         i: impl AsRef<[Value<'a>]>,

@@ -155,3 +155,67 @@ fn test_add_symbol() -> Result<(), Error> {
 
     Ok(())
 }
+
+#[test]
+fn test_rust_struct() -> Result<(), Error> {
+    struct Test {
+        a: i64,
+        b: i64,
+    }
+
+    #[no_mangle]
+    unsafe extern "C" fn test_add(t: *mut Test) -> i64 {
+        let x = &*t;
+        x.a + x.b
+    }
+
+    #[no_mangle]
+    unsafe extern "C" fn test_free(t: *mut Test) {
+        println!("FREE");
+        drop(Box::from_raw(t))
+    }
+
+    #[no_mangle]
+    unsafe extern "C" fn mk_test(a: i64, b: i64) -> *mut Test {
+        Box::into_raw(Box::new(Test { a, b }))
+    }
+
+    let ctx = Context::new()?;
+    let module = Module::new(&ctx, "test_add_symbol")?;
+    let build = Builder::new(&ctx)?;
+
+    symbol!(test_add, mk_test, test_free);
+
+    let i8 = Type::int(&ctx, 8)?;
+    let ptr = i8.pointer(None)?;
+
+    let i64 = Type::int(&ctx, 64)?;
+
+    let mk_test = module.define_function("mk_test", FuncType::new(ptr, &[i64, i64])?)?;
+    let test_add = module.define_function("test_add", FuncType::new(i64, &[ptr])?)?;
+    let test_free =
+        module.define_function("test_free", FuncType::new(Type::void(&ctx)?, &[ptr])?)?;
+
+    let run_test_t = FuncType::new(i64, &[i64, i64])?;
+
+    module.declare_function(&build, "run_test", run_test_t, |f| {
+        let a = f.param(0)?;
+        let b = f.param(1)?;
+
+        let x = build.call(mk_test, &[a, b], "mk_test")?;
+        let y = build.call(test_add, &[x.into()], "test_add")?;
+        build.call(test_free, &[x.into()], "free")?;
+
+        build.ret(y)
+    })?;
+
+    println!("{}", module);
+
+    let engine = ExecutionEngine::new(module)?;
+    let run_test: extern "C" fn(i64, i64) -> i64 = unsafe { engine.function("run_test")? };
+
+    let x = run_test(10, 20);
+    assert_eq!(30, x);
+
+    Ok(())
+}

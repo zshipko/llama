@@ -40,7 +40,7 @@ fn main() -> Result<(), Error> {
     let build = Builder::new(&context)?;
     let engine = ExecutionEngine::new_jit(module, 0)?;
     let mut codegen = CodeGen {
-        context: context,
+        context,
         build,
         engine,
     };

@@ -13,46 +13,29 @@
 //! // do `unsafe` operations internally.
 //! type SumFunc = unsafe extern "C" fn(u64, u64, u64) -> u64;
 //!
-//! // Context should be last to perform cleanup in the correct order
-//! struct CodeGen<'ctx> {
-//!     engine: ExecutionEngine<'ctx>,
-//!     build: Builder<'ctx>,
-//!     context: Context<'ctx>,
-//! }
+//! fn compile_sum(jit: &mut Jit) -> Result<SumFunc, Error> {
+//!     let i64 = Type::i64(jit.context())?;
+//!     let sum_t = FuncType::new(i64, [i64, i64, i64])?;
+//!     let build = jit.build();
+//!     jit.module()
+//!        .declare_function(build, "sum", sum_t, |f| {
+//!             let params = f.params();
+//!             let x = params[0];
+//!             let y = params[1];
+//!             let z = params[2];
 //!
-//! impl<'ctx> CodeGen<'ctx> {
-//!     fn jit_compile_sum(&mut self) -> Result<SumFunc, Error> {
-//!         let i64 = Type::i64(&self.context)?;
-//!         let sum_t = FuncType::new(i64, [i64, i64, i64])?;
-//!         self.engine
-//!             .module()
-//!             .declare_function(&self.build, "sum", sum_t, |f| {
-//!                 let params = f.params();
-//!                 let x = params[0];
-//!                 let y = params[1];
-//!                 let z = params[2];
+//!             let sum = build.add(x, y, "sum")?;
+//!             let sum = build.add(sum, z, "sum")?;
+//!             build.ret(sum)
+//!        })?;
 //!
-//!                 let sum = self.build.add(x, y, "sum")?;
-//!                 let sum = self.build.add(sum, z, "sum")?;
-//!                 self.build.ret(sum)
-//!             })?;
-//!
-//!         unsafe { self.engine.function("sum") }
-//!     }
+//!     unsafe { jit.engine().function("sum") }
 //! }
 //!
 //! fn main() -> Result<(), Error> {
-//!    let context = Context::new()?;
-//!    let module = Module::new(&context, "sum")?;
-//!    let build = Builder::new(&context)?;
-//!    let engine = ExecutionEngine::new_jit(module, 0)?;
-//!    let mut codegen = CodeGen {
-//!         context: context,
-//!         build,
-//!         engine,
-//!     };
+//!     let mut jit = Jit::new("sum", None)?;
 //!
-//!     let sum = codegen.jit_compile_sum()?;
+//!     let sum = compile_sum(&mut jit)?;
 //!
 //!     let x = 1u64;
 //!     let y = 2u64;
@@ -126,6 +109,7 @@ mod context;
 mod error;
 mod execution_engine;
 mod instr;
+mod jit;
 mod memory_buffer;
 mod message;
 mod metadata;
@@ -152,6 +136,7 @@ pub use crate::context::Context;
 pub use crate::error::Error;
 pub use crate::execution_engine::ExecutionEngine;
 pub use crate::instr::*;
+pub use crate::jit::Jit;
 pub use crate::memory_buffer::MemoryBuffer;
 pub use crate::message::Message;
 pub use crate::metadata::Metadata;

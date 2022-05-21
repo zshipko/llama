@@ -16,18 +16,16 @@
 //! fn compile_sum(jit: &mut Jit) -> Result<SumFunc, Error> {
 //!     let i64 = Type::i64(jit.context())?;
 //!     let sum_t = FuncType::new(i64, [i64, i64, i64])?;
-//!     let build = jit.build();
-//!     jit.module()
-//!        .declare_function(build, "sum", sum_t, |f| {
-//!             let params = f.params();
-//!             let x = params[0];
-//!             let y = params[1];
-//!             let z = params[2];
+//!     jit.declare_function("sum", sum_t, |build, f| {
+//!         let params = f.params();
+//!         let x = params[0];
+//!         let y = params[1];
+//!         let z = params[2];
 //!
-//!             let sum = build.add(x, y, "sum")?;
-//!             let sum = build.add(sum, z, "sum")?;
-//!             build.ret(sum)
-//!        })?;
+//!         let sum = build.add(x, y, "sum")?;
+//!         let sum = build.add(sum, z, "sum")?;
+//!         build.ret(sum)
+//!     })?;
 //!
 //!     unsafe { jit.engine().function("sum") }
 //! }

@@ -9,8 +9,7 @@ type SumFunc = unsafe extern "C" fn(u64, u64, u64) -> u64;
 fn compile_sum(jit: &mut Jit) -> Result<SumFunc, Error> {
     let i64 = Type::i64(jit.context())?;
     let sum_t = FuncType::new(i64, [i64, i64, i64])?;
-    let build = jit.build();
-    jit.module().declare_function(build, "sum", sum_t, |f| {
+    jit.declare_function("sum", sum_t, |build, f| {
         let params = f.params();
         let x = params[0];
         let y = params[1];

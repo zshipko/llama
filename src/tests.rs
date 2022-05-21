@@ -6,9 +6,8 @@ fn codegen() -> Result<(), Error> {
 
     let i32 = Type::of::<i32>(jit.context())?;
 
-    let builder = jit.build();
     let ft = FuncType::new(i32, &[i32, i32])?;
-    jit.module().declare_function(builder, "testing", ft, |f| {
+    jit.declare_function("testing", ft, |builder, f| {
         let params = f.params();
         let a = builder.add(params[0], params[1], "a")?;
         builder.ret(&a)
@@ -32,10 +31,10 @@ fn codegen() -> Result<(), Error> {
 fn if_then_else() -> Result<(), Error> {
     let jit = Jit::new("test_if_then_else", None)?;
 
-    let builder = jit.build();
     let f32 = Type::float(jit.context())?;
     let ft = FuncType::new(f32, &[f32])?;
-    jit.module().declare_function(builder, "testing", ft, |f| {
+
+    jit.declare_function("testing", ft, |builder, f| {
         let params = f.params();
         let cond = builder.fcmp(
             Fcmp::LLVMRealULT,
@@ -69,12 +68,11 @@ fn if_then_else() -> Result<(), Error> {
 #[test]
 fn for_loop() -> Result<(), Error> {
     let jit = Jit::new("test_for_loop", None)?;
-    let build = jit.build();
 
     let i64 = Type::int(jit.context(), 64)?;
 
     let ft = FuncType::new(i64, &[i64])?;
-    jit.module().declare_function(build, "testing", ft, |f| {
+    jit.declare_function("testing", ft, |build, f| {
         let params = f.params();
         let one = Const::int_sext(i64, 1)?;
         let f = build.for_loop(
@@ -114,7 +112,6 @@ extern "C" fn testing1234() -> i32 {
 #[test]
 fn test_add_symbol() -> Result<(), Error> {
     let jit = Jit::new("test_add_symbol", None)?;
-    let build = jit.build();
 
     symbol!(testing123, testing1234);
 
@@ -122,18 +119,16 @@ fn test_add_symbol() -> Result<(), Error> {
 
     let testing123_t = FuncType::new(i32, &[])?;
     let testing1234_t = FuncType::new(i32, &[])?;
-    let testing123 = jit.module().define_function("testing123", testing123_t)?;
-    let testing1234 = jit.module().define_function("testing1234", testing1234_t)?;
+    let testing123 = jit.define_function("testing123", testing123_t)?;
+    let testing1234 = jit.define_function("testing1234", testing1234_t)?;
 
-    jit.module()
-        .declare_function(build, "testing", testing123.func_type()?, |_| {
-            build.ret(build.call(testing123, &[], "call")?)
-        })?;
+    jit.declare_function("testing", testing123.func_type()?, |build, _| {
+        build.ret(build.call(testing123, &[], "call")?)
+    })?;
 
-    jit.module()
-        .declare_function(build, "testing1", testing1234.func_type()?, |_| {
-            build.ret(build.call(testing1234, &[], "call")?)
-        })?;
+    jit.declare_function("testing1", testing1234.func_type()?, |build, _| {
+        build.ret(build.call(testing1234, &[], "call")?)
+    })?;
 
     let testing: extern "C" fn() -> i32 = unsafe { jit.engine().function("testing")? };
     let testing1: extern "C" fn() -> i32 = unsafe { jit.engine().function("testing1")? };
@@ -174,7 +169,6 @@ fn test_rust_struct() -> Result<(), Error> {
     }
 
     let jit = Jit::new("test_rust_struct", None)?;
-    let build = jit.build();
     let ctx = jit.context();
     let module = jit.module();
 
@@ -185,14 +179,13 @@ fn test_rust_struct() -> Result<(), Error> {
 
     let i64 = Type::int(ctx, 64)?;
 
-    let mk_test = module.define_function("mk_test", FuncType::new(ptr, &[i64, i64])?)?;
-    let test_add = module.define_function("test_add", FuncType::new(i64, &[ptr])?)?;
-    let test_free =
-        module.define_function("test_free", FuncType::new(Type::void(ctx)?, &[ptr])?)?;
+    let mk_test = jit.define_function("mk_test", FuncType::new(ptr, &[i64, i64])?)?;
+    let test_add = jit.define_function("test_add", FuncType::new(i64, &[ptr])?)?;
+    let test_free = jit.define_function("test_free", FuncType::new(Type::void(ctx)?, &[ptr])?)?;
 
     let run_test_t = FuncType::new(i64, &[i64, i64])?;
 
-    module.declare_function(build, "run_test", run_test_t, |f| {
+    jit.declare_function("run_test", run_test_t, |build, f| {
         let a = f.param(0)?;
         let b = f.param(1)?;
 

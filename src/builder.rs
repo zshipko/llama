@@ -880,4 +880,6 @@ impl<'a> Builder<'a> {
         let single_thread = if single_thread { 1 } else { 0 };
         llvm::core::LLVMBuildAtomicCmpXchg(self.llvm(), ptr.as_ref().llvm(), cmp.as_ref().llvm(), new_.as_ref().llvm(), success_ordering, failure_ordering, single_thread)
     });
+
+    op!(1: freeze, LLVMBuildFreeze);
 }

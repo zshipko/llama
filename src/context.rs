@@ -30,33 +30,12 @@ impl<'a> Clone for Context<'a> {
 impl<'a> Context<'a> {
     fn init() {
         INIT.call_once(|| unsafe {
-            llvm::target::LLVM_InitializeNativeTarget();
-            llvm::target::LLVM_InitializeNativeAsmPrinter();
-            llvm::target::LLVM_InitializeNativeAsmParser();
-
-            llvm::target::LLVMInitializeWebAssemblyTarget();
-            llvm::target::LLVMInitializeWebAssemblyAsmPrinter();
-            llvm::target::LLVMInitializeWebAssemblyAsmParser();
-
-            llvm::target::LLVMInitializeAArch64Target();
-            llvm::target::LLVMInitializeAArch64AsmPrinter();
-            llvm::target::LLVMInitializeAArch64AsmParser();
-
-            llvm::target::LLVMInitializeARMTarget();
-            llvm::target::LLVMInitializeARMAsmPrinter();
-            llvm::target::LLVMInitializeARMAsmParser();
-
-            llvm::target::LLVMInitializeX86Target();
-            llvm::target::LLVMInitializeX86AsmPrinter();
-            llvm::target::LLVMInitializeX86AsmParser();
-
-            llvm::target::LLVMInitializePowerPCTarget();
-            llvm::target::LLVMInitializePowerPCAsmPrinter();
-            llvm::target::LLVMInitializePowerPCAsmParser();
-
-            llvm::target::LLVMInitializeSparcTarget();
-            llvm::target::LLVMInitializeSparcAsmPrinter();
-            llvm::target::LLVMInitializeSparcAsmParser();
+            llvm::target::LLVM_InitializeAllTargetInfos();
+            llvm::target::LLVM_InitializeAllTargetMCs();
+            llvm::target::LLVM_InitializeAllDisassemblers();
+            llvm::target::LLVM_InitializeAllTargets();
+            llvm::target::LLVM_InitializeAllAsmParsers();
+            llvm::target::LLVM_InitializeAllAsmPrinters();
         });
     }
 

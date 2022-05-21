@@ -5,34 +5,4 @@ on:
    - master
 
 jobs:
-  rustdoc:
-    runs-on: ubuntu-latest
-    env:
-      RUSTFLAGS: -D warnings
-      CARGO_INCREMENTAL: 0
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Install dependencies
-      run: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 14 && sudo ln -sf /usr/bin/llvm-config-14 /usr/bin/llvm-config
-
-    - name: Install Rust toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: nightly
-        profile: minimal
-        override: true
-        components: rustfmt, rust-src
-
-    - name: Build Documentation
-      run: cargo doc --all
-
-    - name: Deploy Docs
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_branch: gh-pages
-        publish_dir: ./target/doc
-        force_orphan: true

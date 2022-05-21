@@ -1,0 +1,49 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A library for build scripts to compile custom C code"><meta name="keywords" content="rust, rustlang, rust-lang, cc"><title>cc - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../dark.css" disabled><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../storage.js"></script><script src="../crates.js"></script><script defer src="../main.js"></script>
+    <noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../favicon.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../cc/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div>
+        </a><h2 class="location"></h2>
+    </nav>
+    <nav class="sidebar"><a class="sidebar-logo" href="../cc/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div>
+        </a><h2 class="location"><a href="#">Crate cc</a></h2><div class="sidebar-elems"><div class="block"><ul><li class="version">Version 1.0.73</li><li><a id="all-types" href="all.html">All Items</a></li></div></ul><section><div class="block"><ul><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li></ul></div></section><div id="sidebar-vars" data-name="cc" data-ty="mod" data-relpath=""></div><script defer src="sidebar-items.js"></script></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../cc/index.html"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><div id="settings-menu" tabindex="-1">
+                                <a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../wheel.svg"></a></div>
+                        </div></form></nav></div><section id="main-content" class="content"><div class="main-heading">
+    <h1 class="fqn"><span class="in-band">Crate <a class="mod" href="#">cc</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span></h1><span class="out-of-band"><a class="srclink" href="../src/cc/lib.rs.html#1-3301">source</a> · <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>A library for build scripts to compile custom C code</p>
+<p>This library is intended to be used as a <code>build-dependencies</code> entry in
+<code>Cargo.toml</code>:</p>
+<div class="example-wrap"><pre class="language-toml"><code>[build-dependencies]
+cc = &quot;1.0&quot;</code></pre></div>
+<p>The purpose of this crate is to provide the utility functions necessary to
+compile C code into a static archive which is then linked into a Rust crate.
+Configuration is available through the <code>Build</code> struct.</p>
+<p>This crate will automatically detect situations such as cross compilation or
+other environment variables set by Cargo and will build code appropriately.</p>
+<p>The crate is not limited to C code, it can accept any source code that can
+be passed to a C or C++ compiler. As such, assembly files with extensions
+<code>.s</code> (gcc/clang) and <code>.asm</code> (MSVC) can also be compiled.</p>
+<h2 id="parallelism"><a href="#parallelism">Parallelism</a></h2>
+<p>To parallelize computation, enable the <code>parallel</code> feature for the crate.</p>
+<div class="example-wrap"><pre class="language-toml"><code>[build-dependencies]
+cc = { version = &quot;1.0&quot;, features = [&quot;parallel&quot;] }</code></pre></div>
+<p>To specify the max number of concurrent compilation jobs, set the <code>NUM_JOBS</code>
+environment variable to the desired amount.</p>
+<p>Cargo will also set this environment variable when executed with the <code>-jN</code> flag.</p>
+<p>If <code>NUM_JOBS</code> is not set, the <code>RAYON_NUM_THREADS</code> environment variable can
+also specify the build parallelism.</p>
+<h2 id="examples"><a href="#examples">Examples</a></h2>
+<p>Use the <code>Build</code> struct to compile <code>src/foo.c</code>:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">fn</span> <span class="ident">main</span>() {
+    <span class="ident">cc::Build::new</span>()
+        .<span class="ident">file</span>(<span class="string">&quot;src/foo.c&quot;</span>)
+        .<span class="ident">define</span>(<span class="string">&quot;FOO&quot;</span>, <span class="prelude-val">Some</span>(<span class="string">&quot;bar&quot;</span>))
+        .<span class="ident">include</span>(<span class="string">&quot;src&quot;</span>)
+        .<span class="ident">compile</span>(<span class="string">&quot;foo&quot;</span>);
+}</code></pre></div>
+</div></details><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="mod" href="windows_registry/index.html" title="cc::windows_registry mod">windows_registry</a></div><div class="item-right docblock-short"><p>A helper module to probe the Windows Registry when looking for
+windows-specific tools.</p>
+</div></div></div><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.Build.html" title="cc::Build struct">Build</a></div><div class="item-right docblock-short"><p>A builder for compilation of a native library.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.Error.html" title="cc::Error struct">Error</a></div><div class="item-right docblock-short"><p>Represents an internal error that occurred, with an explanation.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.Tool.html" title="cc::Tool struct">Tool</a></div><div class="item-right docblock-short"><p>Configuration used to represent an invocation of a C compiler.</p>
+</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="cc" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.63.0-nightly (e6a4afc3a 2022-05-20)" ></div>
+</body></html>
